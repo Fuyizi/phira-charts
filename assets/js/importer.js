@@ -585,6 +585,15 @@
     raw("duration", d.duration);
     if (d.bpm && d.bpm.length) lines.push("    bpm: [" + d.bpm.join(", ") + "],");
     raw("notes", d.notes);
+    /* ⚠️ 音符构成（Tap/Hold/Flick/Drag 分项）—— 详情页的「音符构成」一行靠它。
+       这个字段以前只加进了表单对象、**忘了往片段里写**，所以上传上去的条目全都缺它，
+       详情页那一行永远是空的。别再把这条漏掉。 */
+    if (d.notesByType) {
+      lines.push("    notesByType: { tap: " + (Number(d.notesByType.tap) || 0) +
+        ", hold: " + (Number(d.notesByType.hold) || 0) +
+        ", flick: " + (Number(d.notesByType.flick) || 0) +
+        ", drag: " + (Number(d.notesByType.drag) || 0) + " },");
+    }
     str("sha256", d.sha256);
     raw("editTime", d.editTime);
     str("date", d.date);

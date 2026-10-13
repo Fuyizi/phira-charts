@@ -142,6 +142,7 @@ window.CHARTS = [
     duration: 148.12,
     bpm: [190],
     notes: 520,
+    notesByType: { tap: 206, hold: 94, flick: 59, drag: 161 },
     sha256: "435ea64d22aa637f801894dd7fc4807b8d12729dacafd87fc41d2eb68ed50c92",
     editTime: 10396.187,
     date: "2026-10-14",
@@ -151,8 +152,5 @@ window.CHARTS = [
       bvid: "BV19cHd6vEtM",
     },
     license: "未经作者允许禁止转载，禁止商业用途使用"
-  },
-  /* 空站状态：还没有任何作品。
-     谱师从「上传工具」提交后，条目会自动追加到这里。
-     ⚠️ 改谱面信息**不要重传 .pez**，只改这里。 */
+  }
 ];

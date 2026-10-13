@@ -563,6 +563,14 @@ async function waitParsed(d, want) {
     ok(/editTime: 120583\.445/.test(sn), "代码片段含 editTime");
     ok(/date: "2026-09-17"/.test(sn), "代码片段里的日期来自 LastEditTime");
 
+    /* ⚠️ 回归：notesByType 曾经只加进了表单对象、没写进片段，
+       结果上传上去的条目全都缺「音符构成」——详情页那一行一直空着。 */
+    const nbt = sn.match(/tap: (\d+), hold: (\d+), flick: (\d+), drag: (\d+)/);
+    ok(!!nbt, "代码片段含 notesByType（音符构成）", nbt ? nbt[0] : "片段里没有");
+    ok(!!nbt && (+nbt[1] + +nbt[2] + +nbt[3] + +nbt[4]) === 1444,
+      "分项之和 = 音符总数 1444（不会自己造数）", nbt ? nbt[0] : "片段里没有");
+    ok(/notesByType: \{ tap:/.test(sn), "notesByType 是对象字面量写法（不是字符串）");
+
     const ed = d.getElementById("editor-mount").textContent;
     ok(/已有 4 个版本/.test(ed), "界面提示这是已有作品的版本线（v1.0~v1.3）");
     ok(/info\.txt 原文/.test(ed), "可以查看 info.txt 原文");
