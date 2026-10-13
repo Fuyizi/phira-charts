@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>谱面上传</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/wiki.css">
+<script>/* 在样式生效前先定好主题，避免深色模式下刷新闪白 */
+(function(){try{var t=localStorage.getItem("pez-theme");
+if(!t||t==="auto"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+
+<header id="header-mount" class="site-header"></header>
+
+<div class="layout no-rail">
+  <aside id="sidebar-mount" class="sidebar"></aside>
+
+  <main class="content">
+    <h1 class="page-title">谱面上传</h1>
+    <p class="page-sub">拖进 .pez → 自动解析 → 确认无误后一键提交到 GitHub</p>
+
+    <div class="hint">
+      <b>没有访问码则只能使用本页面读取谱面信息。</b>拖进 <code>.pez</code> 文件，
+      读出曲名、曲师、谱师名义、难度、BPM、时长、音符数，并生成数据条目 ——
+      全程在浏览器本地解压，<b>解析过程不上传任何文件</b>。
+    </div>
+
+    <div class="notice">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      <div><b>上传文件公开到网页，需要访问码。</b><br>
+      访问码由站长发放。初次填写后会保存访问码到本地记住，之后拖进文件点一下即可。
+      访问码只存在你自己的浏览器里，不会出现在这个页面上，也不会被别人看到。</div>
+    </div>
+
+    <p class="muted" style="font-size:13px">
+      传完想改信息、改名或删掉？去 <a href="studio"><b>创作中心</b></a> —— 用同一个访问码登录即可。
+    </p>
+
+    <div id="jszip-warn" class="notice" hidden></div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="拖入或点击选择 .pez 文件">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h2V9h3.5L12 4.5 7.5 9H11v8zM4 19h16v2H4z"/></svg>
+      <span class="dz-title">把 .pez 文件拖到这里</span>
+      <span class="dz-sub">或者点击选择文件。解析完成后，用上面的「上传这份谱面」按钮提交。</span>
+      <input id="file-input" type="file" accept=".pez,.zip" multiple hidden>
+    </div>
+
+    <div id="file-list"></div>
+    <div id="editor-mount"></div>
+    <div id="batch-mount"></div>
+
+    <h2 class="section" id="flow">这个工具会替你做什么</h2>
+    <ol class="steps">
+      <li><b>把谱面包拖进来</b><br>自动读出曲名、曲师、谱师名义、难度、BPM、时长、音符数。</li>
+      <li>你需要<b>在表单里核对</b><br>并修改字段，特别是「实际谱师」那一栏（包里没有，需要手填）。</li>
+      <li><b>点「上传这份谱面」</b><br>
+        它会自动完成两件事：把 <code>.pez</code> 传到 <code>charts/&lt;id&gt;/&lt;难度&gt;-&lt;版本&gt;.pez</code>，
+        再把新条目插进 <code>data/charts.js</code>。先传文件、后改数据，避免出现「页面有了、文件还没到」的空窗。</li>
+      <li><b>等 40 秒</b><br>GitHub Pages 自动重建，刷新线上站点就能看到新作品了。</li>
+    </ol>
+
+    <h2 class="section" id="faq">遇到问题</h2>
+    <div class="article">
+      <ul>
+        <li><b>提示「访问码不对」</b> —— 核对有没有多打空格，或者找站长要一个新的。</li>
+        <li><b>提示「连不上后端」</b> —— 检查一下网络，或稍后重试；一直不行就找站长。</li>
+        <li><b>同一份谱面传了两次</b> —— 只要「谱面 ID + 难度 + 版本号」三项都一样，
+          第二次会<b>覆盖</b>第一次，不会出现两张重复的卡片。
+          想发新版就把版本号改掉（比如 v1.0 → v1.1），那会作为新版本收录。</li>
+        <li><b>409 冲突</b> —— <code>data/charts.js</code> 在别处刚被改过。刷新页面重新解析一次再上传。</li>
+        <li><b>拖不进文件 / 页面报错</b> —— 别用 <code>file://</code> 直接双击打开，
+          在线站点上正常使用即可；本地预览请起一个 http 服务。</li>
+      </ul>
+      <p class="muted" style="font-size:12.5px">
+        想验证流程又不想真的提交？用「只预览（不提交）」按钮，它会把要做的每一步打出来，但不动仓库。
+      </p>
+    </div>
+
+    <p class="muted" style="font-size:12.5px;margin-top:22px">
+      这一页是当前版本。早期只有解析功能的版本保留在
+      <a href="import">导入工具（旧版）</a>。
+    </p>
+  </main>
+</div>
+
+<footer id="footer-mount" class="site-footer"></footer>
+
+<script>
+/* 数据文件每次都拿最新的：
+   GitHub Pages 会给 data/charts.js 设 Cache-Control: max-age=600（10 分钟），
+   而「检测到更新就刷新首页」要靠它 —— 加时间戳才能绕开这份缓存。
+   ⚠️ 时间戳必须**每次加载都不一样**：原来用的是「每分钟一个版本号」，
+   结果自动刷新那一刻若还没跨分钟，reload 会命中浏览器缓存（max-age=600），
+   刷了还是旧内容、而且之后不会再重试 —— 表现就是「传完谱刷新没生效」。
+   代价是每次访问都要重新下这个小文件（约 11KB），可以接受。
+   必须同步执行（后面的脚本都依赖 window.CHARTS），所以用 document.write。
+   file:// 下不能带查询参数（会找不到文件），所以按协议判断。 */
+(function () {
+  var q = location.protocol === "file:" ? "" : "?t=" + Date.now();
+  document.write('<script src="data/charts.js' + q + '"><\/script>');
+})();
+</script>
+<script src="assets/js/common.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="assets/js/importer.js"></script>
+<script src="assets/js/uploader.js"></script>
+</body>
+</html>

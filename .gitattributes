@@ -1,0 +1,15 @@
+# 统一换行符：仓库里一律存 LF。
+# 不加这条的话，Windows 和 macOS 交替编辑同一个文件时，
+# 整个文件的每一行都会显示成"被修改"，diff 会彻底没法看 —— 多人协作时的经典灾难。
+* text=auto eol=lf
+
+# 这些是二进制文件，绝不允许做换行符转换（转了文件就废了）
+*.pez  binary
+*.zip  binary
+*.jpg  binary
+*.jpeg binary
+*.png  binary
+*.webp binary
+*.ogg  binary
+*.mp3  binary
+*.ico  binary

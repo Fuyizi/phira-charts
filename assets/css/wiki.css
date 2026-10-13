@@ -1,0 +1,1802 @@
+/* ============================================================================
+ *  assets/css/wiki.css  ——  MediaWiki / 维基百科风格排版
+ *  ---------------------------------------------------------------------------
+ *  设计取向：内容优先、留白克制、层级靠细线而不是靠阴影。
+ *  色彩取自 Wikipedia Vector 2022 的观感，仅作风格参考，未使用其任何资源。
+ * ==========================================================================*/
+
+/* ============================================================================
+ *  ★★★ 设计变量（Design Tokens）★★★
+ *  ---------------------------------------------------------------------------
+ *  自己用 Illustrator 排版时，改这一块就够了 —— 不用往下翻具体规则。
+ *  这里只放尺寸/形状/间距，颜色在下面的「变量」区块里。
+ * ==========================================================================*/
+:root {
+  /* —— 卡片 —— */
+  --card-min:          156px;   /* 卡片最小宽度，决定一排放几张 */
+  --card-thumb-ratio:  1 / 1;   /* 封面比例。想做成 B 站那种横图 → 16 / 9 */
+  --card-gap:          14px;
+  --card-radius:       6px;
+  --card-shadow:       none;                       /* 静止时的投影，追求扁平就留 none */
+  --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, .14);
+
+  /* —— 骨架尺寸 —— */
+  --header-height:     52px;    /* 顶栏高度 */
+  --sidebar-width:     176px;   /* 左侧导航宽度 */
+  --rail-width:        300px;   /* 详情页右侧信息框栏宽度 */
+  --content-max:       1560px;  /* 整页最大宽度 */
+  --content-pad:       30px;    /* 主内容左右内边距 */
+  --banner-height:     180px;   /* 顶部横幅高度（有图时才显示） */
+
+  /* —— 文字与圆角 —— */
+  --fz-base:           15px;    /* 正文基准字号 */
+  --fz-card-title:     13.5px;  /* 卡片标题字号 */
+  --fz-card-meta:      11px;    /* 卡片下方小字 */
+  --radius-pill:       999px;   /* 药丸形（标签、难度徽章）圆角 */
+  --section-line:      1px solid var(--border);
+
+  /* —— 插槽（由 data/charts.js 的 SITE.design 自动写入，一般不用手改）—— */
+  --page-bg-image:     none;    /* 全站背景图 */
+  --banner-image:      none;    /* 顶部横幅图 */
+  /* --accent 故意不设默认值：留空时所有强调色回落到 --link */
+}
+
+/* ============================================================================
+ *  变量（颜色）
+ * ==========================================================================*/
+:root {
+  /* 表面 */
+  --bg:            #ffffff;
+  --bg-sub:        #f8f9fa;   /* 表格头、信息框底色 */
+  --bg-sub-2:      #eaecf0;   /* 略深一档 */
+  --bg-code:       #f8f9fa;
+
+  /* 文字 */
+  --text:          #202122;
+  --text-sub:      #54595d;
+  --text-mute:     #72777d;
+
+  /* 线条：维基的骨架感全靠这一组灰 */
+  --border:        #a2a9b1;
+  --border-soft:   #c8ccd1;
+  --line:          #eaecf0;
+
+  /* 链接 */
+  --link:          #3366cc;
+  --link-visited:  #6b4ba1;
+  --link-hover:    #447ff5;
+  --link-new:      #d33a3a;
+
+  /* 语意色 */
+  --ok:            #14866d;
+  --ok-bg:         #e6f5f1;
+  --warn:          #ac6600;
+  --warn-bg:       #fdf3e2;
+  --err:           #b32424;
+  --err-bg:        #fdeaea;
+
+  /* 难度徽章 */
+  --lv-AT:         #8b3ee6;
+  --lv-IN:         #d33a3a;
+  --lv-HD:         #14866d;
+  --lv-EZ:         #3366cc;
+  --lv-default:    #54595d;
+
+  --radius:        2px;
+  --shadow-pop:    0 2px 8px rgba(0, 0, 0, .14);
+
+  --font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont,
+               "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+               "Noto Sans SC", "Source Han Sans SC", sans-serif;
+  --font-serif: "Linux Libertine", "Georgia", "Times New Roman",
+                "Songti SC", "SimSun", serif;
+  --font-mono: "JetBrains Mono", "Cascadia Mono", Consolas,
+               "SFMono-Regular", Menlo, monospace;
+}
+
+html[data-theme="dark"] {
+  --bg:            #101418;
+  --bg-sub:        #27292d;
+  --bg-sub-2:      #33363b;
+  --bg-code:       #23262a;
+
+  --text:          #eaecf0;
+  --text-sub:      #c8ccd1;
+  --text-mute:     #a2a9b1;
+
+  --border:        #54595d;
+  --border-soft:   #43464a;
+  --line:          #2e3236;
+
+  --link:          #6e9bf5;
+  --link-visited:  #b28ae8;
+  --link-hover:    #9dbbf8;
+  --link-new:      #ef8a8a;
+
+  --ok:            #4ec9a0;
+  --ok-bg:         #17352c;
+  --warn:          #e2b053;
+  --warn-bg:       #3a2f18;
+  --err:           #ef8a8a;
+  --err-bg:        #3a2020;
+
+  --lv-AT:         #b388f0;
+  --lv-IN:         #ef8a8a;
+  --lv-HD:         #4ec9a0;
+  --lv-EZ:         #8ab4f8;
+  --lv-default:    #c8ccd1;
+
+  --shadow-pop:    0 2px 10px rgba(0, 0, 0, .55);
+}
+
+/* ------------------------------------------------------------------ 基础 -- */
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background-color: var(--bg);
+  /* 底纹插槽：SITE.design.background 有值时自动生效 */
+  background-image: var(--page-bg-image);
+  background-attachment: fixed;
+  background-size: cover;
+  background-position: center top;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--fz-base);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+a { color: var(--link); text-decoration: none; }
+a:hover { color: var(--link-hover); text-decoration: underline; }
+a:visited { color: var(--link-visited); }
+a.new { color: var(--link-new); }
+
+img { max-width: 100%; }
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 1.4em 0;
+}
+
+code, kbd, .mono {
+  font-family: var(--font-mono);
+  font-size: .88em;
+  background: var(--bg-code);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: .1em .35em;
+}
+
+kbd { border-bottom-width: 2px; }
+
+::selection { background: #cfe2ff; color: #202122; }
+html[data-theme="dark"] ::selection { background: #3a4a6b; color: #fff; }
+
+/* --------------------------------------------------------------- 顶栏 -- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  height: 52px;
+  padding: 0 16px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex: none;
+  color: var(--text);
+  font-family: var(--font-serif);
+  font-size: 19px;
+  letter-spacing: .2px;
+  white-space: nowrap;
+}
+.brand:hover { text-decoration: none; color: var(--text); }
+/* 顶栏站名。SITE.brandLines 可以让它拆成多行 —— 但只有窄屏才真的分行，
+   宽屏把各行拼在一起显示（行内元素挨着，等于原来的整名）。 */
+.brand-title, .brand-line, .brand-name { display: inline; }
+.brand .brand-mark {
+  width: 26px; height: 26px;
+  flex: none;
+  display: block;
+}
+/* Logo 插槽：内置 SVG 与自定义图片都撑满槽位 */
+.brand-mark svg, .brand-mark img { width: 100%; height: 100%; display: block; }
+.brand-mark img { object-fit: contain; }
+.brand .brand-sub {
+  font-family: var(--font-sans);
+  font-size: 11px;
+  color: var(--text-mute);
+  letter-spacing: .3px;
+  margin-left: 2px;
+}
+
+.header-nav { display: flex; gap: 2px; flex: none; }
+
+.header-nav a {
+  padding: 5px 11px;
+  border-radius: var(--radius);
+  font-size: 13.5px;
+  color: var(--text-sub);
+}
+.header-nav a:hover { background: var(--bg-sub-2); color: var(--text); text-decoration: none; }
+.header-nav a[aria-current="page"] {
+  color: var(--text);
+  font-weight: 600;
+  box-shadow: inset 0 -2px 0 var(--link);
+}
+
+.header-spacer { flex: 1 1 auto; }
+
+/* 搜索框：维基那种「左侧放大镜」的窄条 */
+.search-box {
+  position: relative;
+  flex: 0 1 320px;
+  min-width: 120px;
+}
+.search-box svg {
+  position: absolute; left: 8px; top: 50%;
+  transform: translateY(-50%);
+  width: 15px; height: 15px;
+  fill: var(--text-mute);
+  pointer-events: none;
+}
+.search-box input {
+  width: 100%;
+  height: 32px;
+  padding: 0 10px 0 29px;
+  font: inherit;
+  font-size: 13.5px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.search-box input:focus {
+  outline: 2px solid var(--link);
+  outline-offset: -1px;
+  border-color: var(--link);
+}
+.search-box input::placeholder { color: var(--text-mute); }
+
+.icon-btn {
+  flex: none;
+  width: 32px; height: 32px;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  color: var(--text-sub);
+  cursor: pointer;
+  padding: 0;
+}
+.icon-btn:hover { background: var(--bg-sub-2); color: var(--text); }
+.icon-btn svg { width: 17px; height: 17px; fill: currentColor; }
+.icon-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+
+/* --------------------------------------------------------------- 布局 -- */
+.layout {
+  display: grid;
+  grid-template-columns: 176px minmax(0, 1fr) 300px;
+  gap: 0;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+.layout.no-rail { grid-template-columns: 176px minmax(0, 1fr); }
+
+/* 左侧导航 */
+.sidebar {
+  padding: 22px 10px 40px 16px;
+  font-size: 13px;
+  border-right: 1px solid transparent;
+}
+.sidebar h4 {
+  margin: 18px 0 6px;
+  padding-bottom: 4px;
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--line);
+}
+.sidebar h4:first-child { margin-top: 0; }
+.sidebar ul { list-style: none; margin: 0; padding: 0; }
+.sidebar li { margin: 1px 0; }
+.sidebar li a {
+  display: block;
+  padding: 4px 8px;
+  border-radius: var(--radius);
+  color: var(--link);
+}
+.sidebar li a:hover { background: var(--bg-sub-2); text-decoration: none; }
+.sidebar li a[aria-current="page"] { font-weight: 600; color: var(--text); background: var(--bg-sub-2); }
+.sidebar .count {
+  float: right;
+  color: var(--text-mute);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.sidebar li a.more-link { color: var(--text-mute); font-size: 12px; }
+
+/* 主内容 */
+.content {
+  min-width: 0;
+  padding: 24px 30px 80px;
+}
+.content.narrow { max-width: 900px; }
+
+/* 右侧栏（详情页信息框 / 列表页统计） */
+.rail {
+  padding: 24px 24px 60px 10px;
+  border-left: 1px solid var(--line);
+  font-size: 13px;
+}
+
+/* ------------------------------------------------------------ 文字排版 -- */
+h1.page-title {
+  margin: 0 0 .35em;
+  padding-bottom: .25em;
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.25;
+  border-bottom: 1px solid var(--border);
+}
+
+.page-sub {
+  margin: -.1em 0 1.4em;
+  color: var(--text-mute);
+  font-size: 13px;
+}
+
+/* 面包屑：和副标题分开写，别共用 class（免得选择器抓错元素） */
+.crumbs {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  color: var(--text-mute);
+}
+
+h2.section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 1.9em 0 .7em;
+  padding-bottom: .22em;
+  font-size: 20px;
+  font-weight: 400;
+  border-bottom: 1px solid var(--border);
+}
+h2.section .anchor {
+  font-size: 13px;
+  color: var(--text-mute);
+  opacity: 0;
+  transition: opacity .15s;
+}
+h2.section:hover .anchor { opacity: 1; }
+
+h3 { font-size: 16px; margin: 1.5em 0 .5em; }
+
+.article p { margin: 0 0 .9em; }
+.article ul, .article ol { margin: 0 0 .9em; padding-left: 1.7em; }
+.article li { margin: .2em 0; }
+
+.lead {
+  color: var(--text-sub);
+  font-size: 15px;
+}
+
+/* 首字下沉式的「导语」条 */
+/* ⚠️ 内联图标兜底 —— 别删！
+   <svg viewBox="0 0 24 24"> 如果没写 width/height，浏览器会把它当成
+   width:100% 的替换元素，直接撑满整个正文宽度，变成一张"占满屏幕的大图标"。
+   （详情页那行提示里的下载图标就这么翻过车。）
+   这里给所有没显式指定宽度的 svg 一个 1em 默认值兜住。
+   具体规则（.btn svg / .brand-mark svg 等）优先级更高，不受影响。 */
+svg:not([width]) { width: 1em; height: 1em; }
+
+.hint {
+  margin: 0 0 18px;
+  padding: 9px 13px;
+  background: var(--bg-sub);
+  border-left: 3px solid var(--link);
+  font-size: 13.5px;
+  color: var(--text-sub);
+}
+.hint svg {
+  width: 15px;
+  height: 15px;
+  fill: var(--link);
+  vertical-align: -2px;
+  margin-right: 3px;
+}
+
+/* ------------------------------------------------------------- 提示条 -- */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 0 18px;
+  padding: 10px 14px;
+  font-size: 13.5px;
+  border: 1px solid var(--border-soft);
+  border-left-width: 4px;
+  border-radius: var(--radius);
+  background: var(--bg-sub);
+}
+.notice svg { width: 16px; height: 16px; flex: none; margin-top: 2px; fill: currentColor; }
+.notice.warn { border-left-color: var(--warn); background: var(--warn-bg); color: var(--warn); }
+.notice.info { border-left-color: var(--link); }
+.notice.ok   { border-left-color: var(--ok);  background: var(--ok-bg);  color: var(--ok); }
+.notice .notice-close {
+  margin-left: auto;
+  background: none; border: 0; cursor: pointer;
+  color: inherit; opacity: .55; font-size: 16px; line-height: 1; padding: 0 2px;
+}
+.notice .notice-close:hover { opacity: 1; }
+
+/* 表格容器：列多的时候可以横向滚，不撑破布局 */
+.table-wrap { width: 100%; overflow-x: auto; margin: 0 0 18px; }
+.table-wrap .wikitable { margin-bottom: 0; }
+
+/* ------------------------------------------------------ 表格 wikitable -- */
+.wikitable {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 18px;
+  font-size: 13.5px;
+  background: var(--bg);
+}
+.wikitable th, .wikitable td {
+  padding: 7px 10px;
+  border: 1px solid var(--border-soft);
+  text-align: left;
+  vertical-align: middle;
+}
+.wikitable thead th {
+  background: var(--bg-sub-2);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.wikitable tbody tr:nth-child(even) { background: var(--bg-sub); }
+.wikitable tbody tr:hover { background: var(--bg-sub-2); }
+.wikitable td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wikitable td.actions { white-space: nowrap; text-align: right; }
+
+/* 可排序表头 */
+.wikitable th.sortable { cursor: pointer; user-select: none; padding-right: 22px; position: relative; }
+.wikitable th.sortable::after {
+  content: "";
+  position: absolute; right: 7px; top: 50%;
+  margin-top: -3px;
+  border: 4px solid transparent;
+  border-top-color: var(--text-mute);
+  opacity: .35;
+}
+.wikitable th.sortable:hover { background: var(--bg-sub); }
+.wikitable th.sortable[data-dir="asc"]::after {
+  border-top-color: transparent;
+  border-bottom-color: var(--text);
+  margin-top: -6px;
+  opacity: .9;
+}
+.wikitable th.sortable[data-dir="desc"]::after { border-top-color: var(--text); opacity: .9; }
+
+/* 表格里的曲目单元格 */
+.track-cell { display: flex; align-items: center; gap: 10px; min-width: 190px; }
+.track-cell .thumb {
+  width: 38px; height: 38px;
+  flex: none;
+  object-fit: cover;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg-sub);
+}
+.track-cell .t-main { min-width: 0; }
+.track-cell .t-title {
+  display: block;
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.track-cell .t-sub {
+  display: block;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------- 难度徽章 -- */
+.level {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin: 0 3px 0 0;
+  padding: 1px 7px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.55;
+  color: #fff;
+  background: var(--lv-default);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.level .lv-num { font-weight: 400; opacity: .92; }
+.level.AT { background: var(--lv-AT); }
+.level.IN { background: var(--lv-IN); }
+.level.HD { background: var(--lv-HD); }
+.level.EZ { background: var(--lv-EZ); }
+
+/* 标签 */
+.tag {
+  display: inline-block;
+  margin: 2px 3px 2px 0;
+  padding: 1px 8px;
+  font-size: 11.5px;
+  color: var(--text-sub);
+  background: var(--bg-sub-2);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+a.tag:hover { background: var(--bg-sub); text-decoration: none; color: var(--text); }
+
+.muted { color: var(--text-mute); }
+.nowrap { white-space: nowrap; }
+
+/* ---------------------------------------------------------- 按钮样式 -- */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 13px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg-sub);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s, border-color .12s;
+}
+.btn:hover { background: var(--bg-sub-2); color: var(--text); text-decoration: none; }
+.btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.btn svg { width: 15px; height: 15px; fill: currentColor; flex: none; }
+
+.btn.primary {
+  color: #fff;
+  background: var(--accent, var(--link));
+  border-color: var(--accent, var(--link));
+}
+.btn.primary:hover {
+  background: var(--accent, var(--link-hover));
+  border-color: var(--accent, var(--link-hover));
+  filter: brightness(1.08);
+}
+
+.btn.ghost { background: transparent; }
+.btn.ghost:hover { background: var(--bg-sub-2); }
+
+.btn.sm { padding: 3px 9px; font-size: 12.5px; font-weight: 500; }
+.btn.lg { padding: 9px 20px; font-size: 15px; }
+.btn[disabled], .btn.is-disabled {
+  opacity: .5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* --------------------------------------------------------- 工具条/筛选 -- */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  background: var(--bg-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.toolbar .tb-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-mute);
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+.chips { display: flex; flex-wrap: wrap; gap: 5px; }
+.chip {
+  padding: 2px 10px;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.chip:hover { border-color: var(--border); color: var(--text); }
+.chip[aria-pressed="true"] {
+  color: #fff;
+  background: var(--accent, var(--link));
+  border-color: var(--accent, var(--link));
+}
+
+/* ---- 网格 / 列表 切换：底下那块底色会滑过去 ---- */
+.seg {
+  display: inline-flex;
+  position: relative;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.seg button {
+  position: relative;
+  z-index: 1;
+  padding: 3px 11px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  background: transparent;
+  border: 0;
+  border-left: 1px solid var(--border-soft);
+  cursor: pointer;
+}
+.seg button:first-child { border-left: 0; }
+.seg button[aria-pressed="true"] { color: var(--text); }
+.seg-pill {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  z-index: 0;
+  background: var(--bg-sub-2);
+  transition: transform .26s cubic-bezier(.22, .61, .36, 1),
+              width .26s cubic-bezier(.22, .61, .36, 1);
+}
+
+/* ---- 自绘下拉（排序用）----
+   原生 <select> 的下拉由操作系统绘制，CSS 碰不到，所以自己画一个。
+   展开：浮层朝按钮方向轻微下滑 + 放大归位，选项逐条错位落进来。 */
+.dd { position: relative; display: inline-block; }
+.dd-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  font: inherit;
+  font-size: 12.5px;
+  color: var(--text-sub);
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  cursor: pointer;
+}
+.dd-btn:hover { border-color: var(--border); color: var(--text); }
+.dd-btn:focus-visible { outline: 2px solid var(--link); outline-offset: 1px; }
+.dd-chev { display: inline-flex; transition: transform .22s cubic-bezier(.22, .61, .36, 1); }
+.dd-chev svg { width: 13px; height: 13px; fill: currentColor; }
+.dd.open .dd-chev { transform: rotate(180deg); }
+
+.dd-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  min-width: 168px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-pop);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(.97);
+  transform-origin: 100% 0;
+  transition: opacity .16s ease, transform .22s cubic-bezier(.22, .61, .36, 1),
+              visibility 0s linear .22s;
+}
+.dd.open .dd-pop {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition: opacity .18s ease, transform .26s cubic-bezier(.22, .61, .36, 1),
+              visibility 0s;
+}
+.dd-opt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 5px 8px;
+  font: inherit;
+  font-size: 12.5px;
+  text-align: left;
+  color: var(--text-sub);
+  background: transparent;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: opacity .18s ease, transform .24s cubic-bezier(.22, .61, .36, 1),
+              background .14s ease, color .14s ease;
+}
+.dd.open .dd-opt {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--i, 0) * 18ms);
+}
+.dd-opt:hover, .dd-opt:focus-visible { background: var(--bg-sub); color: var(--text); outline: none; }
+.dd-opt[aria-selected="true"] { color: var(--text); font-weight: 600; }
+.dd-tick { display: inline-flex; width: 13px; flex: none; }
+.dd-tick svg { width: 12px; height: 12px; fill: currentColor; opacity: 0; transform: scale(.6); transition: opacity .18s ease, transform .22s cubic-bezier(.22, .61, .36, 1); }
+.dd-opt[aria-selected="true"] .dd-tick svg { opacity: 1; transform: none; }
+
+.result-count { font-size: 12.5px; color: var(--text-mute); margin-left: auto; }
+
+/* ══════════════════════════════════════════════════════════════════════════
+ *  首页：UP 主投稿页式布局
+ *  结构 = 极简信息条（弱化 up 主元素）→ 难度标签页 → 筛选条 → 缩略图网格
+ * ══════════════════════════════════════════════════════════════════════════ */
+
+/* 顶部横幅（SITE.design.banner 有值时才出现） */
+.page-banner {
+  display: none;
+  width: 100%;
+  height: var(--banner-height);
+  object-fit: cover;
+  border-radius: var(--card-radius);
+  margin: 0 0 4px;
+  background: var(--bg-sub);
+}
+.page-banner.on { display: block; }
+
+/* 极简信息条 */
+.space-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  padding: 18px 0 12px;
+  border-bottom: var(--section-line);
+}
+.space-bar .sb-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1.25;
+}
+.space-bar .sb-stats {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  color: var(--text-mute);
+}
+.space-bar .sb-stats b { font-weight: 600; color: var(--text-sub); }
+.space-bar .sb-by {
+  margin-left: auto;
+  padding-bottom: 2px;
+  font-size: 12px;
+  color: var(--text-mute);
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* 难度标签页 */
+.tabs {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  border-bottom: var(--section-line);
+  margin: 0 0 2px;
+}
+/* 标签按钮自己一条可横向滑动的轨道。
+   右侧控件（排序下拉 / 视图切换）之所以要放**轨道外**，
+   是因为 overflow 容器会把绝对定位的浮层一起裁掉 —— 下拉就没法展开了。 */
+.tabs-scroll {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+/* 选中态底下那条指示条 —— 位置由 JS 挪，于是会「滑」过去而不是跳过去 */
+.tab-ink {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 2px;
+  width: 0;
+  background: var(--accent, var(--link));
+  border-radius: 2px;
+  pointer-events: none;
+  transition: transform .3s cubic-bezier(.22, .61, .36, 1),
+    width .3s cubic-bezier(.22, .61, .36, 1);
+}
+.tabs .tab {
+  flex: none;
+  padding: 9px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--text-sub);
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tabs .tab:hover { color: var(--text); background: var(--bg-sub); }
+.tabs .tab[aria-selected="true"] {
+  color: var(--text);
+  font-weight: 600;
+  /* 下划线交给会滑动的 .tab-ink 去画，这里留空免得画成两条 */
+  border-bottom-color: transparent;
+}
+.tabs .tabs-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: none;
+  margin-left: auto;
+  padding: 0 0 4px 10px;
+}
+
+/* 筛选条 */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 0 3px;
+}
+.filter-bar .fb-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--text-mute);
+  text-transform: uppercase;
+}
+.filter-bar .result-count { margin-left: auto; font-size: 12.5px; color: var(--text-mute); }
+
+/* 详情页的难度切换条（同一首歌的其他难度） */
+.lv-switch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+  padding: 9px 12px;
+  background: var(--bg-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.lv-switch .fb-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .5px;
+  color: var(--text-mute);
+}
+/* chip 用在 <a> 上时要去掉下划线 */
+a.chip { display: inline-block; text-decoration: none; }
+a.chip:hover { text-decoration: none; }
+
+/* 卡片上的版本小标签 */
+.vc-ver {
+  display: inline-block;
+  padding: 0 7px;
+  font-size: 10.5px;
+  line-height: 17px;
+  color: var(--text-mute);
+  background: var(--bg-sub-2);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+
+/* 版本历史表里，当前正在查看的那一行 */
+.wikitable tr.ver-row-current td { background: var(--bg-sub-2); }
+
+/* 缩略图网格 */
+.thumb-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-min), 1fr));
+  gap: var(--card-gap);
+  margin: 14px 0 0;
+}
+
+/* —— 小卡片 —— */
+.vcard {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.vc-thumb-wrap {
+  position: relative;
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  background: var(--bg-sub);
+  border: 1px solid var(--card-border, var(--border-soft));
+  box-shadow: var(--card-shadow);
+  transition: box-shadow .18s, border-color .18s;
+}
+.vcard:hover .vc-thumb-wrap {
+  box-shadow: var(--card-shadow-hover);
+  border-color: var(--border);
+}
+.vc-thumb {
+  display: block;
+  position: relative;
+  aspect-ratio: var(--card-thumb-ratio);
+  overflow: hidden;
+}
+.vc-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform .3s ease;
+}
+.vcard:hover .vc-thumb img { transform: scale(1.045); }
+
+/* 右下角时长 —— 借用视频卡片的语法 */
+.vc-dur {
+  position: absolute;
+  right: 5px;
+  bottom: 5px;
+  z-index: 2;
+  padding: 0 5px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #fff;
+  background: rgba(0, 0, 0, .7);
+  border-radius: 3px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+  transition: opacity .2s ease;
+}
+
+/* 缩略图右上角的下载按钮：平时半透明，悬停才亮起来 */
+.vc-dl {
+  position: absolute;
+  right: 5px;
+  top: 5px;
+  z-index: 2;              /* 压在悬停预览之上，播放时也能点 */
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(0, 0, 0, .5);
+  opacity: 0;
+  transition: opacity .18s, background .18s;
+}
+.vcard:hover .vc-dl, .vc-dl:focus-visible { opacity: 1; }
+.vc-dl:hover { background: var(--accent, var(--link)); color: #fff; }
+.vc-dl svg { width: 15px; height: 15px; fill: currentColor; }
+
+/* ---- 悬停封面：从正中**圆形扩散**出来的静音短预览 ----
+   几个要点：
+     · **就绪之前不扩散**。B 站播放器要加载一两秒，那段时间如果先把层露出来，
+       看到的是一片纯黑（就是之前那个「黑屏卡一秒」）。所以这里不设黑底、
+       iframe 也先透明，等 iframe 的 load 事件到了再加 .pv-ready 才扩散出去。
+     · clip-path 从 circle(0%) 涨到 circle(75%)。用百分比而不是像素，
+       是因为「盖满四角」所需的半径跟封面长宽比有关，75% 对任何比例都够
+     · pointer-events: none —— 预览**只看不玩**，点封面照旧跳详情页
+     · 一律静音（地址里带 muted=1），这是浏览器允许自动播放的前提 */
+.vc-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  opacity: 0;
+  pointer-events: none;
+  clip-path: circle(0% at 50% 50%);
+  transition: clip-path .42s cubic-bezier(.22, .61, .36, 1),
+              opacity .22s ease .06s;
+}
+.vc-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  opacity: 0;
+  transition: opacity .22s ease;
+}
+/* 播放器就绪（iframe 的 load 到了）→ 才从中心扩散出去 */
+.vc-thumb-wrap.pv-ready .vc-preview {
+  opacity: 1;
+  clip-path: circle(75% at 50% 50%);
+}
+.vc-thumb-wrap.pv-ready .vc-preview iframe { opacity: 1; }
+/* 播放时把时长角标收掉，别跟播放器自己的控件叠在一起 */
+.vc-thumb-wrap.pv-on .vc-dur { opacity: 0; }
+
+/* 左上角「静音预览」小标签：让访客知道为什么没声音 */
+.vc-pv-tag {
+  position: absolute;
+  left: 6px;
+  top: 6px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  line-height: 16px;
+  color: #fff;
+  background: rgba(0, 0, 0, .55);
+  border-radius: 999px;
+  opacity: 0;
+  transform: translateY(-3px);
+  pointer-events: none;
+  transition: opacity .2s ease, transform .24s cubic-bezier(.22, .61, .36, 1);
+}
+.vc-pv-tag svg { width: 11px; height: 11px; fill: currentColor; }
+.vc-thumb-wrap.pv-ready .vc-pv-tag { opacity: 1; transform: none; }
+
+/* 卡片下方的曲目信息 */
+.vc-body { padding: 8px 2px 0; }
+.vc-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--fz-card-title);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+.vc-title:hover { color: var(--link); }
+.vc-sub {
+  margin: 3px 0 0;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.vc-levels {
+  margin: 5px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+.vc-levels .level { font-size: 11px; padding: 0 7px; line-height: 17px; }
+.vc-foot {
+  margin: 6px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fz-card-meta);
+  color: var(--text-mute);
+}
+.vc-foot .vc-bili {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: var(--link);
+  white-space: nowrap;
+}
+.vc-foot .vc-bili svg { width: 12px; height: 12px; fill: currentColor; }
+
+/* 锚点跳转时给固定顶栏留出空间 */
+#list, .site-blurb { scroll-margin-top: calc(var(--header-height) + 14px); }
+
+.tabs .tab .count {
+  margin-left: 5px;
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-mute);
+}
+.tabs .tab[aria-selected="true"] .count { color: var(--text-sub); }
+
+/* 站点说明：低存在感收尾 */
+.site-blurb {
+  max-width: 760px;
+  margin: 40px 0 0;
+  padding-top: 18px;
+  border-top: var(--section-line);
+  font-size: 12.5px;
+  line-height: 1.75;
+  color: var(--text-mute);
+}
+.site-blurb h2 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .6px;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+.site-blurb p { margin: 0 0 .7em; }
+
+/* 文字按钮：看起来像链接，实际是 button（用于「按曲师筛选」这种原地筛选） */
+.linkish {
+  padding: 0;
+  font: inherit;
+  color: var(--link);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+}
+.linkish:hover { text-decoration: underline; color: var(--link-hover); }
+
+/* 空结果 */
+.empty-state {
+  padding: 48px 16px;
+  text-align: center;
+  color: var(--text-mute);
+  border: 1px dashed var(--border-soft);
+  border-radius: var(--card-radius);
+  margin-top: 14px;
+}
+.empty-state p { margin: 0 0 12px; }
+
+/* ------------------------------------------------------------- 信息框 -- */
+.infobox {
+  float: right;
+  width: 100%;
+  max-width: 300px;
+  margin: 0 0 16px 20px;
+  padding: 0;
+  background: var(--bg-sub);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.infobox .ib-title {
+  margin: 0;
+  padding: 7px 10px;
+  width: auto;          /* 覆盖 .infobox th 的 38% 列宽 */
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: center;
+  border-bottom: 1px solid var(--border-soft);
+}
+.infobox .ib-image {
+  display: block;
+  width: 100%;
+  border-bottom: 1px solid var(--border-soft);
+  background: var(--bg);
+}
+.infobox .ib-caption {
+  padding: 5px 10px;
+  font-size: 11.5px;
+  color: var(--text-mute);
+  text-align: center;
+  border-top: 0;                 /* 紧贴上面的图，不要多一条线 */
+  border-bottom: 1px solid var(--border-soft);
+}
+.infobox table { width: 100%; border-collapse: collapse; }
+.infobox th, .infobox td {
+  padding: 5px 10px;
+  border-top: 1px solid var(--border-soft);
+  vertical-align: top;
+  text-align: left;
+}
+.infobox tr:first-child th, .infobox tr:first-child td { border-top: 0; }
+.infobox th { width: 38%; font-weight: 600; color: var(--text-sub); }
+.infobox .ib-foot {
+  padding: 7px 10px;
+  border-top: 1px solid var(--border-soft);
+  display: flex; gap: 6px; flex-wrap: wrap;
+}
+.infobox .ib-foot .btn { flex: 1 1 auto; justify-content: center; }
+
+/* 信息框放进右栏时不再浮动，铺满栏宽 */
+.rail .infobox { float: none; max-width: none; margin: 0 0 16px; }
+
+/* 目录框 */
+.toc {
+  display: table;
+  min-width: 210px;
+  max-width: 340px;
+  margin: 0 0 18px;
+  padding: 9px 14px 11px;
+  background: var(--bg-sub);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+.toc .toc-title { font-weight: 700; text-align: center; margin-bottom: 5px; }
+.toc ol { margin: 0; padding-left: 1.35em; }
+.toc li { margin: 2px 0; }
+.toc a { transition: color .2s ease, padding-left .2s ease; }
+/* 滚到哪一节，目录里哪一条高亮（真·跟随，不是装饰） */
+.toc a.on { color: var(--accent, var(--link)); font-weight: 600; padding-left: 3px; }
+
+/* 相关作品小列表 */
+.rel-list { list-style: none; margin: 0; padding: 0; }
+.rel-list li {
+  display: flex; align-items: center; gap: 9px;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+}
+.rel-list li:first-child { border-top: 0; }
+.rel-list img { width: 34px; height: 34px; object-fit: cover; border: 1px solid var(--border-soft); border-radius: var(--radius); flex: none; }
+.rel-list .r-main { min-width: 0; }
+.rel-list .r-title { font-weight: 600; font-size: 13px; }
+.rel-list .r-sub { font-size: 11.5px; color: var(--text-mute); }
+
+/* 统计小块 */
+.stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat {
+  padding: 9px 11px;
+  background: var(--bg-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.stat .s-num {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+}
+.stat .s-label { font-size: 11.5px; color: var(--text-mute); }
+
+/* ------------------------------------------------------------ 预览区 -- */
+.preview-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #000;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.preview-frame iframe {
+  width: 100%; height: 100%; border: 0; display: block;
+  /* 点开封面后才会注入 iframe —— 让它淡入展开，不要硬闪一下 */
+  animation: pv-in .34s cubic-bezier(.22, .61, .36, 1) both;
+}
+@keyframes pv-in {
+  from { opacity: 0; transform: scale(.985); }
+  to   { opacity: 1; transform: none; }
+}
+.preview-poster {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px;
+  color: #fff;
+  background: radial-gradient(120% 120% at 50% 0%, #2b3a55 0%, #11151c 70%);
+  cursor: pointer;
+  border: 0;
+  font: inherit;
+  text-align: center;
+  padding: 16px;
+}
+.preview-poster .pp-play {
+  width: 54px; height: 54px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .14);
+  border: 2px solid rgba(255, 255, 255, .8);
+}
+.preview-poster .pp-play svg { width: 22px; height: 22px; fill: #fff; margin-left: 3px; }
+.preview-poster .pp-text { font-size: 13.5px; opacity: .95; }
+.preview-poster .pp-note { font-size: 11.5px; opacity: .6; }
+
+/* 下载区 */
+.download-panel {
+  padding: 15px 17px;
+  background: var(--bg-sub);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+}
+.download-panel .dl-main {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+}
+.download-panel .dl-meta { font-size: 12.5px; color: var(--text-sub); }
+.download-panel .dl-meta b { font-variant-numeric: tabular-nums; }
+.file-chip {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-family: var(--font-mono); font-size: 12px;
+  color: var(--text-sub);
+}
+
+/* 步骤列表 */
+.steps { counter-reset: step; list-style: none; margin: 0; padding: 0; }
+.steps li {
+  position: relative;
+  padding: 0 0 12px 34px;
+  counter-increment: step;
+}
+.steps li::before {
+  content: counter(step);
+  position: absolute; left: 0; top: 1px;
+  width: 22px; height: 22px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  color: #fff; background: var(--link);
+  border-radius: 50%;
+}
+.steps li::after {
+  content: "";
+  position: absolute; left: 10.5px; top: 25px; bottom: 2px;
+  border-left: 1px dashed var(--border-soft);
+}
+.steps li:last-child::after { display: none; }
+
+/* ------------------------------------------------------------ 代码块 -- */
+pre.code {
+  position: relative;
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  overflow: auto;
+  max-height: 420px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.6;
+  background: var(--bg-code);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  tab-size: 2;
+}
+pre.code.copyable { padding-top: 34px; }
+pre.code .copy-btn {
+  position: absolute; top: 6px; right: 8px;
+}
+
+/* ------------------------------------------------------------ 拖拽区 -- */
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 44px 20px;
+  text-align: center;
+  background: var(--bg-sub);
+  border: 2px dashed var(--border-soft);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.dropzone:hover, .dropzone.over { background: var(--bg-sub-2); border-color: var(--link); }
+.dropzone svg { width: 34px; height: 34px; fill: var(--text-mute); }
+.dropzone .dz-title { font-size: 15px; font-weight: 600; }
+.dropzone .dz-sub { font-size: 12.5px; color: var(--text-mute); max-width: 460px; }
+.dropzone.over .dz-title { color: var(--link); }
+
+.file-list { list-style: none; margin: 14px 0 0; padding: 0; }
+.file-list li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 11px;
+  margin-bottom: 7px;
+  font-size: 13px;
+  background: var(--bg-sub);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.file-list .fl-name { font-weight: 600; font-family: var(--font-mono); font-size: 12.5px; }
+.file-list .fl-size { margin-left: auto; color: var(--text-mute); font-variant-numeric: tabular-nums; }
+.status-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--text-mute); }
+.status-dot.ok { background: var(--ok); }
+.status-dot.err { background: var(--err); }
+.status-dot.busy { background: var(--warn); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .25; } }
+
+/* 键值对展示（解析结果） */
+.kv { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 16px; }
+.kv th, .kv td { padding: 5px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.kv th { width: 150px; font-weight: 600; color: var(--text-sub); }
+.kv td { font-family: var(--font-mono); font-size: 12.5px; word-break: break-all; }
+
+/* ------------------------------------------------------------ 页脚 -- */
+.site-footer {
+  max-width: 1560px;
+  margin: 0 auto;
+  padding: 18px 30px 40px;
+  font-size: 12.5px;
+  color: var(--text-mute);
+  border-top: 1px solid var(--line);
+}
+.site-footer p { margin: 0 0 5px; }
+
+/* 回到顶部 */
+.to-top {
+  position: fixed;
+  right: 22px; bottom: 22px;
+  z-index: 40;
+  width: 38px; height: 38px;
+  display: flex;
+  align-items: center; justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  box-shadow: var(--shadow-pop);
+  cursor: pointer;
+  color: var(--text-sub);
+  /* 进出用 opacity / visibility / transform 做，不用 display ——
+     后者没法过渡，会出现「啪」地闪出来 */
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px) scale(.88);
+  transition: opacity .2s ease, visibility .2s ease,
+    transform .32s cubic-bezier(.34, 1.56, .64, 1);
+}
+.to-top.show { opacity: 1; visibility: visible; transform: none; }
+.to-top svg { width: 17px; height: 17px; fill: currentColor; }
+
+/* --------------------------------------------------------- 响应式 -- */
+@media (max-width: 1180px) {
+  .layout { grid-template-columns: 176px minmax(0, 1fr); }
+  .rail {
+    grid-column: 2;
+    padding: 0 30px 40px;
+    border-left: 0;
+  }
+  .infobox { float: none; max-width: none; margin: 0 0 18px; }
+}
+@media (max-width: 860px) {
+  .header-nav { display: none; }
+  /* ---- 顶栏必须塞得下 ----
+     以前 .brand 是 flex:none + nowrap、搜索框 min-width 120px，
+     加起来在 360~390px 的手机上会**横向溢出** —— 结果右边的主题按钮被挤出屏幕，
+     得右滑才能找到。
+     现在两件事一起做：① 站名按 SITE.brandLines 拆行显示（整名一行会被截断成
+     「Phira 自制…」，拆行后全名都看得见）；② 字号收小，两行也塞得下 52px 的顶栏。 */
+  .site-header { gap: 8px; padding: 0 12px; }
+  .header-spacer { display: none; }
+  .brand { flex: 0 1 auto; min-width: 0; font-size: 15px; line-height: 1.14; gap: 7px; }
+  /* ⚠️ 拆了行的站名**不许被压缩**：它的每一行都是 nowrap，
+     一旦被 flex 压下去，文字会溢出到旁边的搜索框上（不是变省略号，是叠上去）。 */
+  .brand.brand-stacked { flex: none; }
+  .brand-title {
+    display: inline-flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .brand-line { display: block; white-space: nowrap; }
+  /* 没配 brandLines 的站点退回整名一行，这时才靠截断兜底 */
+  .brand > .brand-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .search-box { flex: 1 1 auto; min-width: 72px; }
+  .layout, .layout.no-rail { grid-template-columns: minmax(0, 1fr); }
+  .sidebar {
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px 18px;
+    display: flex; flex-wrap: wrap; gap: 0 22px;
+  }
+  .sidebar h4 { margin-top: 0; }
+  .content { padding: 18px 16px 60px; }
+  /* ⚠️ grid-column 必须落回 1：上面 1180px 那段把 .rail 钉在了第 2 列，
+     而这里已经是单列布局 —— 会凭空生成一个很窄的隐式列，把信息框挤成一条竖线。
+     落回第 1 列后 rail 自然排到正文下面，正是手机端要的效果。 */
+  .rail { grid-column: 1; padding: 0 16px 40px; }
+  h1.page-title { font-size: 23px; }
+  .search-box { flex: 1 1 auto; }
+  .thumb-grid { --card-min: 142px; --card-gap: 11px; }
+  .space-bar { flex-wrap: wrap; }
+  .space-bar .sb-by { margin-left: 0; width: 100%; text-align: left; }
+}
+@media (max-width: 560px) {
+  .brand .brand-sub { display: none; }
+  .thumb-grid { --card-min: 132px; --card-gap: 10px; }
+  .stat-grid { grid-template-columns: 1fr 1fr; }
+  .track-cell .thumb { display: none; }
+  .space-bar .sb-title { font-size: 19px; }
+  .tabs .tab { padding: 8px 11px; font-size: 13.5px; }
+}
+
+/* --------------------------------------------------------- 打印 -- */
+@media print {
+  .site-header, .sidebar, .rail, .toolbar, .to-top, .btn, .preview-frame { display: none !important; }
+  .layout { display: block; }
+  body { font-size: 11pt; }
+  a { color: #000; text-decoration: underline; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+  html { scroll-behavior: auto; }
+}
+
+
+/* ======================================================= 手机端适配 ==
+ * 这一块统管「窄屏」与「触摸设备」的行为，桌面端完全不受影响。
+ * 设计参考 bilibili 手机版：顶部横向标签条 + 底部固定 Tab 栏。
+ * ==================================================================*/
+
+/* 底部导航：默认不显示、不占位，只有窄屏才出现 */
+.mobile-tabbar { display: none; }
+
+@media (max-width: 860px) {
+  /* ---- 底部固定 Tab 栏（B 站式）---- */
+  .mobile-tabbar {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 60;
+    background: var(--bg);
+    border-top: 1px solid var(--line);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .mobile-tabbar a {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 54px;
+    padding: 7px 4px;
+    font-size: 11px;
+    line-height: 1.1;
+    color: var(--text-mute);
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .mobile-tabbar a[aria-current="page"] { color: var(--accent, var(--link)); }
+  .mobile-tabbar a:hover { text-decoration: none; }
+  .mobile-tabbar svg { width: 21px; height: 21px; fill: currentColor; }
+
+  /* 给底部栏让位，别把内容盖住 */
+  body { padding-bottom: calc(54px + env(safe-area-inset-bottom, 0px)); }
+  /* 侧栏内容与首页重复，窄屏直接收掉（导航已经在底部了）*/
+  .sidebar { display: none; }
+  /* 回到顶部按钮上移 */
+  .to-top { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  /* 手机上那种 11 列的表格没法看，只保留网格视图 */
+  .toolbar [data-view] { display: none; }
+  /* 刘海屏 / 曲面屏左右安全区 */
+  .content, .rail {
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  /* ---- 触摸目标放大：手指点得准 ---- */
+  .btn { min-height: 42px; }
+  .chip { min-height: 34px; }
+  .tabs .tab { min-height: 38px; }
+  .icon-btn { min-width: 40px; min-height: 40px; }
+  .vc-dl { width: 40px; height: 40px; right: 6px; top: 6px; }
+  .vc-dl svg { width: 18px; height: 18px; }
+  /* 标签页允许横向滑动，跟 B 站分类条一个手感 */
+  .tabs-scroll { overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; }
+  .tabs-scroll::-webkit-scrollbar { display: none; }
+}
+
+/* ---- 触摸设备没有 hover：把「悬停才出现」的东西改成常显 ---- */
+@media (hover: none) {
+  .vc-dl { opacity: 1; }
+  .vcard:hover .vc-thumb img { transform: none; }
+  h2.section .anchor { opacity: .45; }
+}
+
+/* ---- 窄屏 + 触摸：内容再收一点，别太挤 ---- */
+@media (max-width: 560px) {
+  .mobile-tabbar a { font-size: 10.5px; }
+  .content, .rail { padding-left: 14px; padding-right: 14px; }
+}
+
+/* ---- 创作中心（studio.html）---- */
+.sc-login { display: flex; gap: 8px; margin: 10px 0 0; flex-wrap: wrap; }
+.sc-login input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+.sc-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  font-size: 11.5px;
+  white-space: nowrap;
+}
+.sc-pill.public { color: var(--text-sub); }
+.sc-pill.private { color: var(--accent, var(--link)); border-color: currentColor; }
+#edit-mount table.kv input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: inherit;
+  font: inherit;
+}
+@media (max-width: 860px) {
+  #list-mount table.wikitable { font-size: 12.5px; }
+  #list-mount table.wikitable td.actions { display: flex; flex-wrap: wrap; gap: 6px; }
+}
+
+/* ========================================================= 动效 ==
+ * 原则：有反馈感、但不挡路。全部走 CSS ——
+ *       最底下那条 prefers-reduced-motion 规则能一次性把它们全关掉。
+ * ==================================================================*/
+
+/* ---- 主题图标：太阳 ↔ 月亮的矢量过渡 ----
+   两组图形都画在同一个 SVG 里，切换时靠 transform / opacity 互相变形，
+   不做 innerHTML 替换（那样没有中间过程，会「啪」地跳一下）。 */
+.theme-ico { width: 20px; height: 20px; overflow: visible; }
+.theme-ico .ti-core { fill: currentColor; }
+.theme-ico .ti-bite { transition: transform .45s cubic-bezier(.4, 0, .2, 1); }
+.theme-ico .ti-rays line {
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  transform-origin: 12px 12px;
+  transition: opacity .28s ease, transform .45s cubic-bezier(.4, 0, .2, 1);
+}
+/* 浅色（太阳）：光线全开；遮罩挪到画布外 —— 等于不挖，就是个实心圆 */
+[data-theme="light"] .theme-ico .ti-bite { transform: translate(24px, -24px); }
+/* 深色（月亮）：光线缩没并转一下；遮罩斜着挪进来，咬出一弯月牙 */
+[data-theme="dark"] .theme-ico .ti-rays line {
+  opacity: 0;
+  transform: scale(.4) rotate(-40deg);
+}
+[data-theme="dark"] .theme-ico .ti-bite { transform: translate(-5px, -2.6px); }
+
+/* ---- 换主题：新配色从点击处画一个圆铺满整页 ----
+   动画用 **CSS 关键帧**挂在 view-transition 伪元素上，不走 WAAPI。
+   （WAAPI 那条路要等 transition.ready，某些浏览器上会静默不执行，
+     表现就是「啪一下直接换掉」—— 这里避开它。）
+   点击坐标通过 --wipe-* 传进来；万一自定义属性没继承到伪元素上，
+   var() 的兜底值会让它从屏幕正中扩散，动画照样有。 */
+::view-transition-old(root) { z-index: 1; animation: none; mix-blend-mode: normal; }
+::view-transition-new(root) {
+  z-index: 2;
+  mix-blend-mode: normal;
+  animation: wb-theme-wipe 520ms cubic-bezier(.4, 0, .2, 1) both;
+}
+@keyframes wb-theme-wipe {
+  from { clip-path: circle(0px at var(--wipe-x, 50%) var(--wipe-y, 50%)); }
+  to   { clip-path: circle(var(--wipe-r, 150vmax) at var(--wipe-x, 50%) var(--wipe-y, 50%)); }
+}
+
+/* ---- 没有 View Transitions 时的替代遮罩（手机上多半走这条）----
+   盖在最上层，颜色由 JS 设成新主题的页面底色，
+   clip-path 从点击处扩散到盖满，然后淡出把新内容露出来。
+   z-index 取 9999：站内最高的固定元素（底部导航）才 60。 */
+.theme-wipe {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+}
+
+/* ---- 网格 ⇄ 列表 切换：**不做任何自定义过渡** ----
+   内容直接整体替换，唯一的动效是卡片自己那套入场动画（见下面 .wb-fresh）。
+   曾经给这里加过 View Transitions、也自己搭过两层做横向平移和交叉淡入淡出，
+   横竖都会带来「往上飘」的观感，已全部撤掉、不留残留规则。 */
+
+/* ---- 卡片入场：从下面轻轻浮上来 ----
+   这里刻意用 `translate` 属性而不是 `transform` ——
+   它跟悬停抬升用的 `transform` 互不干扰。
+   （若两个都用 transform，animation 的 fill-mode 会把 hover 的位移吃掉） */
+@keyframes wb-rise {
+  from { opacity: 0; translate: 0 9px; }
+  to   { opacity: 1; translate: 0 0; }
+}
+.thumb-grid .vcard {
+  transition: transform .22s cubic-bezier(.22, .61, .36, 1), box-shadow .22s ease;
+}
+/* ⚠️ 入场动画只挂在「直接渲染」的那一次（.wb-fresh 由 home.js 打上）。
+   过渡层里渲染出来的那批刻意不挂 —— 否则过渡收尾把 .wb-sliding 摘掉的
+   那一瞬间动画会被重新触发，卡片忽然又浮一次，看着就是画面往上跳。 */
+.thumb-grid.wb-fresh .vcard { animation: wb-rise .38s cubic-bezier(.22, .61, .36, 1) both; }
+/* 详细列表用**同一套**入场动效（从下浮起 + 淡入）。
+   注意挂在 .table-wrap 上而不是 <tr> 上 —— tr 能不能吃 transform 各家浏览器
+   并不一致，包一层普通块元素最稳。 */
+.table-wrap.wb-fresh { animation: wb-rise .38s cubic-bezier(.22, .61, .36, 1) both; }
+@media (hover: hover) {
+  .thumb-grid .vcard:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 24px -12px rgba(0, 0, 0, .4);
+  }
+}
+
+/* ---- 按钮：按下去有个回弹感 ---- */
+.btn {
+  transition: transform .13s ease, background-color .18s ease,
+    border-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+.btn:active { transform: scale(.965); }
+.icon-btn { transition: transform .13s ease, background-color .18s ease, color .18s ease; }
+.icon-btn:active { transform: scale(.9); }
+
+/* ---- 主题色本身也短过渡一下，扩散时不会显得生硬 ---- */
+html { transition: background-color .3s ease, color .3s ease; }
+
+/* ---- 首页署名行的「操作说明」入口：桌面端顶栏已有导航，只在窄屏显示 ---- */
+.sb-howto { display: none; }
+
+@media (max-width: 860px) {
+  .sb-howto {
+    display: inline-block;
+    margin: 0 6px 0 0;
+    padding: 2px 9px;
+    border: 1px solid var(--border-soft);
+    border-radius: 999px;
+    font-size: 11.5px;
+    color: var(--link);
+    text-decoration: none;
+  }
+  .sb-howto:hover { text-decoration: none; background: var(--bg-sub); }
+  /* 署名换一行 —— 跟「操作说明」挤在同一行会显得很局促 */
+  .sb-by .sb-author { display: block; margin-top: 4px; }
+}
+
+/* ---- 手机端下载卡：窄屏才出现，把下载入口提到标题下方 ---- */
+.mobile-dl-card { display: none; }
+
+@media (max-width: 860px) {
+  .mobile-dl-card {
+    display: block;
+    margin: 0 0 18px;
+    padding: 14px;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius);
+    background: var(--bg-sub);
+  }
+  .mobile-dl-card .mdc-meta {
+    margin: 0 0 10px;
+    font-size: 12.5px;
+    color: var(--text-mute);
+    font-variant-numeric: tabular-nums;
+  }
+  /* 短预览排在下载按钮上面，跟按钮之间留点气口 */
+  .mobile-dl-card .preview-frame { margin: 0 0 12px; }
+  .mobile-dl-card .mdc-main {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 46px;
+    font-size: 15px;
+  }
+  .mobile-dl-card .mdc-name {
+    margin: 8px 0 0;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--text-mute);
+    word-break: break-all;
+  }
+  .mobile-dl-card .mdc-sub {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 42px;
+    margin-top: 8px;
+  }
+}

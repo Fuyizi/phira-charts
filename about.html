@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>使用说明</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/wiki.css">
+<script>/* 在样式生效前先定好主题，避免深色模式下刷新闪白 */
+(function(){try{var t=localStorage.getItem("pez-theme");
+if(!t||t==="auto"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+
+<header id="header-mount" class="site-header"></header>
+
+<div class="layout">
+  <aside id="sidebar-mount" class="sidebar"></aside>
+
+  <main class="content">
+    <h1 class="page-title">使用说明</h1>
+    <p class="page-sub">访客怎么下谱面、谱师怎么传谱、站长怎么维护与发布</p>
+
+    <div class="toc">
+      <div class="toc-title">目录</div>
+      <ol>
+        <li><a href="#for-players">来下谱面的</a></li>
+        <li><a href="#for-charters">给谱师（自己传谱）</a></li>
+        <li><a href="#what">这是什么</a></li>
+        <li><a href="#tree">文件结构</a></li>
+        <li><a href="#add">怎么加一份新作品</a></li>
+        <li><a href="#custom">怎么改站点信息</a></li>
+        <li><a href="#design">自己排版（Illustrator）</a></li>
+        <li><a href="#bili">短预览 / 完整视频</a></li>
+        <li><a href="#deploy">发布到 GitHub Pages</a></li>
+        <li><a href="#limit">关于大文件的注意事项</a></li>
+        <li><a href="#faq">常见问题</a></li>
+      </ol>
+    </div>
+
+    <!-- ══════════ 第 1 部分：给访客和谱师看的（面向使用者） ══════════ -->
+    <h2 class="section" id="for-players">来下谱面的<a class="anchor" href="#for-players">#</a></h2>
+    <div class="article">
+      <p>一句话版本：<b>按难度挑 → 停一下看手感 → 下载 → 丢进 Phira。</b></p>
+      <ul>
+        <li><b>找谱</b>：顶部按难度分标签页。搜索框是<b>打完字按回车</b>才搜的；
+          右边还能按标签筛，按时间 / 曲名 / 难度等排序。</li>
+        <li><b>先看手感</b>：鼠标停在封面上，会自动播一小段（<b>静音</b>，移开就停）。
+          点封面进详情页。</li>
+        <li><b>下载</b>：卡片右上角的圆钮，或详情页里的下载按钮。
+          文件名形如 <code>窗 IN Lv.12+ 芣 v1.0.pez</code>，一眼能看出是哪一版。</li>
+        <li><b>装进 Phira</b>：下载 → 打开 Phira 的「谱面导入 / 本地谱面」→ 选中那个文件。
+          不显示就检查一下有没有下完整。</li>
+        <li><b>看老版本</b>：详情页下半部分有「版本历史」。旧版本页不放预览视频 ——
+          视频演示的是最新版的手感。</li>
+        <li><b>深色模式</b>：右上角太阳 / 月亮按钮。</li>
+      </ul>
+      <p>手机上一样能用：直接点卡片下载，细节参数在标题下面。</p>
+    </div>
+
+    <h2 class="section" id="for-charters">给谱师（自己传谱）<a class="anchor" href="#for-charters">#</a></h2>
+    <div class="article">
+      <h3>第一步：拿访问码</h3>
+      <p>找站长要一个，形如 <code>px-xxxxxxxx</code>。<b>一人一个，别互相转借</b> ——
+      上传的作品归属是跟访问码绑定的，转借会让作品挂到别人名下。</p>
+
+      <h3>上传一份新谱</h3>
+      <ol class="steps">
+        <li><b>打开「上传工具」页</b></li>
+        <li><b>把访问码填进「访问码」那一栏，点「记住」</b><br>
+          存在你自己的浏览器里，以后自动带上。</li>
+        <li><b>把 .pez 拖进下面的框</b></li>
+        <li><b>核对接析结果，改掉不对的地方</b></li>
+        <li><b>先点「只预览（不提交）」检查一遍</b></li>
+        <li><b>没问题再点「上传这份谱面」</b></li>
+      </ol>
+      <p>会上传三样东西：</p>
+      <ul>
+        <li>谱面本体 → <code>charts/&lt;作品id&gt;/&lt;难度&gt;-&lt;版本&gt;.pez</code></li>
+        <li>封面 → <code>assets/covers/&lt;作品id&gt;.jpg</code></li>
+        <li>数据条目 → <code>data/charts.js</code> 里的一条</li>
+      </ul>
+      <p>约 40 秒后 GitHub Pages 自动重建，首页上就能看到了。</p>
+
+      <h3>自动解析可能不准的地方</h3>
+      <div class="table-wrap"><table class="wikitable">
+        <thead><tr><th>字段</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><b>难度</b></td>
+            <td>来自谱面包里 <code>info.txt</code> 的 <code>Level:</code> 一栏。
+              别人写的是 <code>IN Lv.15</code>（难度名 + 数值），但有的包只写 <code>Level: 0</code>
+              —— 这时<b>解析不到就不填</b>，不会替你猜，请在表单里手动选。</td></tr>
+          <tr><td><b>谱师名义</b></td>
+            <td><code>Charter:</code> 是<b>整行原文</b>，不会按逗号拆开（团体名会被拆坏）。</td></tr>
+          <tr><td><b>实际谱师</b></td>
+            <td>真正动手的人，跟名义经常不是一回事，需要的时候手动填。</td></tr>
+        </tbody>
+      </table></div>
+      <p>曲名里的 <code>#</code>、emoji 之类都会原样保留，不会被当成注释截断。</p>
+
+      <h3>创作中心：管已经传上去的作品</h3>
+      <p>打开「创作中心」，填访问码登录。列表里<b>只有你自己的</b>作品。</p>
+      <div class="table-wrap"><table class="wikitable">
+        <thead><tr><th>操作</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td><b>编辑</b></td>
+            <td>改曲名 / 中文名 / 曲师 / 谱师名义 / 难度值 / 版本号 / 许可 / 简介</td></tr>
+          <tr><td><b>改名</b></td>
+            <td>换作品 ID，仓库里的文件会一起搬到新目录，不会留断链</td></tr>
+          <tr><td><b>删除</b></td>
+            <td>摘掉数据条目 + 删掉 <code>.pez</code></td></tr>
+          <tr><td><b>公开 / 私密</b></td>
+            <td>一键切换。私密的作品在站点上<b>完全看不到</b>（首页、列表、详情页都进不去）</td></tr>
+        </tbody>
+      </table></div>
+      <p>新上传的谱<b>默认是公开</b>的；想先藏着，上传后去创作中心点一下「设为私密」。</p>
+
+      <h3>⚠️ 两条必须记住的事</h3>
+      <p><b>① 改信息，永远不要重传 <code>.pez</code>。</b><br>
+      谱面文件动辄十几 MB，而 Git 会把<b>每一个版本的历史都留着</b> ——
+      每重传一次就往仓库里堆一份。所以：</p>
+      <ul>
+        <li>只改曲名 / 简介 / 预览视频 / 难度这种<b>信息</b> → 去创作中心改，只动数据</li>
+        <li>只有<b>谱面本身变了</b>（音符、判定线、时长……）→ 才传新版本，并且<b>改一下版本号</b></li>
+      </ul>
+      <p><b>② 「删除」是留痕的。</b><br>
+      文件从最新版里消失了，但它<b>仍然躺在 Git 历史里</b>，翻提交记录还是能下到。
+      所以对「绝对不想给别人看到」的谱，<b>请先设成私密</b>，别指望删除。</p>
+
+      <h3>版本怎么管</h3>
+      <p>同一份谱的多个版本：<b>作品 ID 不变、难度不变，只改「版本号」</b>。</p>
+      <ul>
+        <li>首页每组只显示最新的一版</li>
+        <li>详情页的「版本历史」里能看到全部，也能翻回旧版</li>
+        <li>下载下来的文件名带着版本号，不会互相覆盖</li>
+      </ul>
+
+      <h3>遇到问题</h3>
+      <p>上传时会有一行行日志，出错基本都能一眼定位：</p>
+      <div class="table-wrap"><table class="wikitable">
+        <thead><tr><th>看到什么</th><th>意思</th></tr></thead>
+        <tbody>
+          <tr><td><code>访问码不对</code></td>
+            <td>其实是<b>好消息</b> —— 说明链路已经通了，只是码打错了</td></tr>
+          <tr><td><code>Failed to fetch</code></td>
+            <td>网络到不了后端。换个网络试试，或者找站长</td></tr>
+          <tr><td><code>token 无效或已过期</code></td>
+            <td>重新登录一次创作中心即可</td></tr>
+        </tbody>
+      </table></div>
+      <p>实在搞不定就把日志整段发给站长。</p>
+    </div>
+
+    <hr>
+    <p class="muted" style="font-size:12.5px">下面是站长自己的维护文档 ——
+    只有当你要改站点内容、自己排版、或者重新部署时才需要往下看。</p>
+
+    <!-- ══════════ 第 2 部分：站长自己的维护文档 ══════════ -->
+    <h2 class="section" id="what">这是什么<a class="anchor" href="#what">#</a></h2>
+    <div class="article">
+      <p>一个纯静态的个人作品站，用来展示和分发自制谱面（<code>.pez</code> 格式）。
+      整个站没有任何后端，所有内容由 <code>data/charts.js</code> 这一个文件驱动，
+      直接双击 <code>index.html</code> 就能打开，传到 GitHub Pages 上也不需要任何构建步骤。</p>
+      <p>设计上分两种语气：<b>首页</b>借用投稿页的观感 —— 左侧导航、难度标签页、
+      一屏铺开的缩略图小卡片，每张卡片下面只放最必要的曲目信息
+      （曲名、曲师 / 谱师、难度、体积、短预览入口）；
+      <b>详情页</b>则回到维基百科式的展开 —— 目录、右侧信息框、
+      细线分隔的数据表、更新日志，适合慢慢读。
+      两套视觉效果共享同一套设计变量，改一处两边都会跟着变。</p>
+    </div>
+
+    <h2 class="section" id="tree">文件结构<a class="anchor" href="#tree">#</a></h2>
+    <pre class="code">
+根目录/
+├─ index.html            首页：作品总表（搜索 / 筛选 / 排序 / 表格卡片切换）
+├─ chart.html            详情页：chart.html?id=作品id
+├─ import.html           .pez 导入工具（拖进去自动解析）
+├─ about.html            本页
+├─ data/
+│   └─ charts.js         ← 唯一需要你手动维护的文件
+├─ charts/
+│   └─ &lt;作品id&gt;/
+│       ├─ IN-v1.0.pez    难题度 + 版本各一个文件
+│       ├─ IN-v1.2.pez
+│       └─ AT-v1.0.pez
+├─ assets/
+│   ├─ css/wiki.css      样式（★ 顶部有一块「设计变量」）
+│   ├─ js/               脚本
+│   ├─ covers/           封面图，命名 &lt;id&gt;.png 或 &lt;id&gt;.svg
+│   ├─ design/           放你自己设计（Illustrator 导出）的图，见下文
+│   └─ favicon.svg       站点图标
+└─ vendor/
+    └─ jszip.min.js      解析 .pez 用的库（已内置，离线可用）</pre>
+
+    <h2 class="section" id="add">怎么加一份新作品<a class="anchor" href="#add">#</a></h2>
+    <div class="article">
+      <p><b>推荐做法：</b>打开<a href="upload">上传工具</a>，把 <code>.pez</code> 拖进去，
+      它会自动读出曲名、曲师、谱师、难度、音符数、判定线数量，并生成一段现成的代码。
+      改掉猜错的地方，复制，粘进 <code>data/charts.js</code> 的 <code>CHARTS</code> 数组。</p>
+      <p><b>手动做法：</b>直接复制一段现成条目改。最少需要这几个字段：</p>
+      <pre class="code">
+{
+  id: "my-chart",        // 必填，作品标识（一首歌一个，来自 info.txt 的 Path）
+  level: "IN",           // 必填，难度名：AT / IN / HD / EZ / FM
+  difficulty: "15.4",    // 难度数值，支持 "16+" 这种写法
+  version: "v1.0",       // 版本号（给人看的）
+  seq: 1,                // 排序号（机器看的，导入工具会自动算）
+  title: "曲名",
+  artist: "曲师",
+  charterName: "霓虹组",   // 谱师名义：单个字符串，来自 info.txt 的 Charter:
+  charters: ["小明", "小红"], // 实际谱师：**数组**，真正动手的人
+  duration: 157,         // 时长，**单位秒**；页面显示时自动转 02:37
+  bpm: [180],            // BPM，**数组**；变 BPM 就把所有值列进去
+  editTime: 12304.25,    // 编辑净用时，单位秒
+  desc: "简介。"
+}</pre>
+      <p><code>id</code> 必须唯一且稳定，<code>seq</code> 必须能区分先后 ——
+      这两个决定了「哪些记录属于同一份谱」和「哪一版最新」。</p>
+
+      <h3>版本是怎么算的</h3>
+      <p>相同 <code>id</code> + 相同 <code>level</code> 的记录，会被认为是**同一份谱的不同版本**。
+      所以 <code>aurora</code> 的 IN 和 AT 是两条独立的版本线。</p>
+      <ul>
+        <li><b>首页</b>每个组合只显示 <code>seq</code> 最大的那一版</li>
+        <li><b>详情页</b>默认显示最新版，并在下面列出完整的「版本历史」</li>
+        <li>历史版本有独立链接：<code>chart.html?id=aurora&amp;lv=IN&amp;v=1.0</code>，可以单独下载</li>
+        <li><b>排序为什么不用 <code>version</code></b>：版本号是自由文本，<code>"v1.10"</code>
+          按字符串比会比 <code>"v1.9"</code> 还小，会排错。所以另有一个自增的 <code>seq</code></li>
+      </ul>
+      <p>加新版本时，把新记录追加进数组即可，<b>不要改动旧记录</b>。
+      导入工具会自动读取已有版本并算出正确的 <code>seq</code>。</p>
+
+      <h3>文件放哪</h3>
+      <p>谱面文件放在 <code>charts/&lt;作品id&gt;/&lt;难度&gt;-&lt;版本&gt;.pez</code>，
+      例如 <code>charts/aurora/IN-v1.0.pez</code>。这样同一个作品的多个版本、多个难度
+      天然分居不同文件，不会互相覆盖。</p>
+      <p><b>改谱面信息时不要重传 .pez</b> —— 调难度、写更新日志只改数据文件就够了。
+      谱面文件每次重传都会在 Git 历史里多留一份 20MB 的垃圾。</p>
+    </div>
+
+    <h2 class="section" id="custom">怎么改站点信息<a class="anchor" href="#custom">#</a></h2>
+    <div class="article">
+      <p>站点标题、署名、简介、页脚、侧边栏友情链接，全都在
+      <code>data/charts.js</code> 顶部的 <code>window.SITE</code> 里：</p>
+      <pre class="code">
+window.SITE = {
+  title: "Phira 自制谱仓库",       // 顶栏和页脚显示的站名
+  tagline: "个人自制谱面的归档与下载站",
+  author: "Clarity",               // 显示成 by xxx
+  intro: "第一行\n第二行",          // 首页那条简介，\n 会换行
+  footer: "版权或免责声明",
+  links: [                         // 侧边栏「链接」，不要就写 []
+    { text: "Phira 官网", url: "https://phira.moe" }
+  ]
+};</pre>
+      <p>没有找到 <code>favicon.svg</code> 想要的图标？它就是一个普通 SVG 文件，直接替换即可。</p>
+    </div>
+
+    <h2 class="section" id="design">自己排版（Illustrator）<a class="anchor" href="#design">#</a></h2>
+    <div class="article">
+      <p>整站的视觉都留了插槽。你可以用 Illustrator 出图后直接替换，
+      完全不用碰 JavaScript —— 只要把图放进 <code>assets/design/</code>，
+      再把路径填到配置里。</p>
+
+      <h3>一、换图片</h3>
+      <pre class="code">design: {
+  logo: "assets/design/logo.svg",          // 顶栏图标，建议 48×48 透明底
+  banner: "assets/design/banner.jpg",      // 首页顶部横幅，建议 1600×320
+  background: "assets/design/bg.png",      // 全站底纹，建议做得很淡
+  cardPlaceholder: "assets/design/na.svg", // 没有封面的作品用这张，建议 400×400
+  accent: "#fb7299",                       // 强调色：按钮 / 选中态 / 链接一起变
+  cardMinWidth: "190px",                   // 卡片最小宽度 → 一行放几张
+  cardThumbRatio: "16 / 9"                 // 封面比例，方图填 "1 / 1"
+}</pre>
+      <p>上面每一项都<b>可以留空</b>，留空就用内置样式。<br>
+      图片路径填错也不会把页面弄坏：Logo 会自动退回内置图标，
+      封面会自动换成按作品名生成的占位图，横幅加载失败则干脆不占位置。</p>
+
+      <h3>二、调尺寸和形状</h3>
+      <p>圆角、间距、字号、投影、栏宽这些都集中在 <code>assets/css/wiki.css</code>
+      <b>最顶部那块「设计变量」</b>里，改那一块就够了，不用往下翻具体规则。</p>
+      <table class="wikitable">
+        <thead><tr><th>变量</th><th>管什么</th></tr></thead>
+        <tbody>
+          <tr><td><code>--card-min</code></td><td>卡片最小宽度，决定一排放几张</td></tr>
+          <tr><td><code>--card-thumb-ratio</code></td><td>封面比例，<code>1 / 1</code>（方）或 <code>16 / 9</code>（横）</td></tr>
+          <tr><td><code>--card-gap</code></td><td>卡片之间的间距</td></tr>
+          <tr><td><code>--card-radius</code></td><td>卡片圆角</td></tr>
+          <tr><td><code>--card-shadow</code></td><td>静止时的投影，写 <code>none</code> 就是纯扁平风</td></tr>
+          <tr><td><code>--card-shadow-hover</code></td><td>鼠标悬停时的投影</td></tr>
+          <tr><td><code>--sidebar-width</code></td><td>左侧导航宽度</td></tr>
+          <tr><td><code>--content-max</code></td><td>整页最大宽度</td></tr>
+          <tr><td><code>--fz-base</code></td><td>正文基准字号，想整体缩放就调它</td></tr>
+          <tr><td><code>--banner-height</code></td><td>顶部横幅高度</td></tr>
+        </tbody>
+      </table>
+
+      <h3>三、换配色</h3>
+      <p>只想换个主题色：把 <code>design.accent</code> 填成一个颜色就够了（比如 B 站粉
+      <code>#fb7299</code>），它会同时接管按钮、选中态和链接。</p>
+      <p>想细调：改 <code>wiki.css</code> 里颜色变量区块的 <code>--link</code>、
+      <code>--bg-sub</code>、<code>--border</code>、<code>--text</code> 等。
+      <b>浅色和深色是两套</b>，分别在 <code>:root</code> 和
+      <code>html[data-theme="dark"]</code> 里，改完记得两套都看一眼。</p>
+
+      <h3>四、能整块替换的位置</h3>
+      <p>HTML 里凡是带「插槽」字样的注释，都是留给你的替换区，
+      比如首页的顶部横幅和那条极简信息条。想彻底重做某一页的排版，
+      直接改对应 HTML 的结构即可 —— 数据仍然由 <code>data/charts.js</code> 提供，
+      渲染逻辑都在 <code>assets/js/</code> 目录下（首页是 <code>home.js</code>、
+      详情页是 <code>detail.js</code>）。</p>
+      <p class="muted" style="font-size:12.5px">小提示：Illustrator 导出卡片底图时，
+      建议导出成 PNG 或 SVG；如果要做成「卡片边框独立于封面」的那种设计，
+      改 <code>.vc-thumb-wrap</code> 的 <code>background</code> 与
+      <code>padding</code> 就能得到带边框的九宫格效果。</p>
+    </div>
+
+    <h2 class="section" id="bili">两种预览：短预览 / 完整视频<a class="anchor" href="#bili">#</a></h2>
+    <div class="article">
+      <p>预览拆成两个独立字段，<b>别混</b>：<b>短预览</b>才是内嵌播放的，<b>完整视频</b>只做成外链按钮。</p>
+      <table class="wikitable">
+        <thead><tr><th>字段</th><th>长什么样</th><th>页面上的效果</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><code>shortPreview</code><br><span class="muted" style="font-size:12px">短预览</span></td>
+            <td><code>{ bvid: "BV1xx411c7mD",<br>&nbsp;&nbsp;start: 42, note: "片段" }</code></td>
+            <td><b>详情页里内嵌的播放器</b>，点击后才加载（不拖慢页面）。<br>
+              <code>bvid</code> 取自链接里 <code>/video/BV1xx411c7mD</code> 这一段；<br>
+              <code>start</code> 可选，从第几秒开始播。<br>
+              <b>留空则不出现播放器</b>，只提示去 B 站看。</td>
+          </tr>
+          <tr>
+            <td><code>bilibili</code><br><span class="muted" style="font-size:12px">完整视频</span></td>
+            <td><code>{ bvid: "BV1xx411c7mD",<br>&nbsp;&nbsp;note: "完整版" }</code></td>
+            <td><b>只做一个外链按钮</b>（新标签页打开），不占版面。<br>
+              填了 <code>bvid</code> 就会自动拼出视频地址；也可以直接填 <code>url</code>。</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>两者可以填同一个 BV 号（最常见的情况就是同一个视频），也可以分开：短预览放一小段演示，
+      完整视频放全曲。导入工具里只填一个 BV 号时，两边会自动都用它。</p>
+      <p class="muted" style="font-size:12.5px">内嵌播放器的兼容性由 B 站决定：
+      当页面以 <code>file://</code> 直接打开、或视频作者关闭了外站播放时，播放器可能拒绝加载。
+      所以完整视频的外链按钮始终保留，作为兜底。</p>
+    </div>
+
+    <h2 class="section" id="deploy">发布到 GitHub Pages<a class="anchor" href="#deploy">#</a></h2>
+    <div class="article">
+      <p>这个站是纯静态的，不需要构建。最简单的做法：</p>
+      <ol class="steps">
+        <li><b>新建仓库</b><br>用你的新 GitHub 账号建一个仓库，建议命名
+          <code>&lt;用户名&gt;.github.io</code>，这样网址就是
+          <code>https://&lt;用户名&gt;.github.io/</code>，最干净。想用别的名字也可以，
+          访问路径会变成 <code>https://&lt;用户名&gt;.github.io/仓库名/</code>。</li>
+        <li><b>上传所有文件</b><br>用 GitHub 网页的「Add file → Upload files」把
+          <code>index.html</code>、<code>chart.html</code>、<code>import.html</code>、
+          <code>about.html</code>、<code>data/</code>、<code>assets/</code>、
+          <code>vendor/</code>、<code>charts/</code> 一起传上去。
+          注意保持文件夹层级，别把里面的文件拉平。</li>
+        <li><b>打开 Pages</b><br>仓库 → Settings → Pages → Source 选
+          <code>Deploy from a branch</code>，分支选 <code>main</code>、
+          目录选 <code>/ (root)</code>，保存。</li>
+        <li><b>等一两分钟</b><br>回到 Pages 页面会看到绿色提示和网址，点进去就行了。</li>
+      </ol>
+      <p><b>关于相对路径：</b>本站全部使用相对路径，所以放在子目录下（比如
+      <code>/仓库名/</code>）也能正常工作，不需要改任何配置。</p>
+      <p><b>关于 <code>.gitignore</code>：</b>如果以后用命令行推送，
+      注意别把 <code>charts/</code> 里的谱面给忽略掉了。</p>
+    </div>
+
+    <h2 class="section" id="limit">关于大文件的注意事项<a class="anchor" href="#limit">#</a></h2>
+    <div class="article">
+      <p>你的谱面单个 5–20MB，未来可能到 30 份。有几个硬限制值得先知道：</p>
+      <table class="wikitable">
+        <thead><tr><th>限制</th><th>数值</th><th>影响</th></tr></thead>
+        <tbody>
+          <tr><td>单个文件大小</td><td>100 MB</td><td>20MB 完全安全。</td></tr>
+          <tr><td>仓库建议体积</td><td>1 GB</td><td>30 份 × 20MB ≈ 600MB，接近但不超。再多就要考虑外部存储。</td></tr>
+          <tr><td>Pages 月流量</td><td>约 100 GB（软限制）</td><td>按 10MB 一份算，约一万次下载。个人站够用。</td></tr>
+          <tr><td>单次上传数量</td><td>网页端约 100 个文件</td><td>文件多时建议用 GitHub Desktop 或 git 命令行。</td></tr>
+        </tbody>
+      </table>
+      <p><b>要提醒的一点：</b>Git 会保存文件的每一个历史版本。
+      如果你之后更新了某份谱面，旧版本的 20MB 仍然留在仓库历史里，
+      体积会累积。所以谱面文件尽量「定稿后再传」，
+      不要频繁替换同一个文件。确实需要频繁更新时，可以另开一个仓库专门放谱面文件，
+      或者用 Cloudflare R2 / 对象存储这类外部方案，把下载链接指向外部地址
+      ——条目里的 <code>file</code> 字段支持填完整网址。</p>
+    </div>
+
+    <h2 class="section" id="faq">常见问题<a class="anchor" href="#faq">#</a></h2>
+    <div class="article">
+      <p><b>为什么下载 .pez 时浏览器提示有风险？</b><br>
+      因为它不是浏览器认识的文件类型。它本质上就是个 zip 压缩包，
+      在 Phira 里才能打开。想彻底避免这个提示，可以把文件改名为
+      <code>.pez.zip</code>，但那会让 Phira 无法直接导入，不推荐。</p>
+
+      <p><b>中文显示成乱码方块？</b><br>
+      页面统一使用 UTF-8，所有 HTML 都带了 <code>&lt;meta charset="utf-8"&gt;</code>。
+      如果本地用某些编辑器打开 <code>data/charts.js</code> 修改后出现乱码，
+      记得把编辑器保存编码设成 UTF-8（无 BOM）。</p>
+
+      <p><b>想加一个「下载全部」按钮？</b><br>
+      纯静态站没法一键打包多个文件（除非预先做好一个 zip）。
+      可以在 <code>charts/</code> 下放一个打包好的 <code>all-charts.zip</code>，
+      然后在 <code>data/charts.js</code> 里加一条 <code>links</code> 指向它。</p>
+
+      <p><b>列表太长会不会卡？</b><br>
+      不会。这个站是纯字符串渲染，没有引入任何前端框架，
+      一百份作品在手机上也是瞬间出来的。</p>
+
+      <p><b>改完 <code>data/charts.js</code> 页面没变？</b><br>
+      浏览器缓存。用 <kbd>Ctrl</kbd> + <kbd>F5</kbd> 强制刷新一次。</p>
+    </div>
+  </main>
+
+  <aside class="rail">
+    <h3 style="margin:0 0 10px;font-size:13px;color:var(--text-mute);letter-spacing:.5px">速查</h3>
+    <table class="kv" style="font-size:12.5px">
+      <tr><th>数据文件</th><td style="font-family:var(--font-mono);font-size:12px">data/charts.js</td></tr>
+      <tr><th>下载目录</th><td style="font-family:var(--font-mono);font-size:12px">charts/&lt;id&gt;.pez</td></tr>
+      <tr><th>封面目录</th><td style="font-family:var(--font-mono);font-size:12px">assets/covers/&lt;id&gt;.png</td></tr>
+      <tr><th>详情页</th><td style="font-family:var(--font-mono);font-size:12px">chart.html?id=&lt;id&gt;</td></tr>
+    </table>
+    <p style="font-size:12.5px;margin:14px 0 0">
+      <a href="./">返回首页</a><br>
+      <a href="upload">打开上传工具</a>
+    </p>
+  </aside>
+</div>
+
+<footer id="footer-mount" class="site-footer"></footer>
+
+<script>
+/* 数据文件每次都拿最新的：
+   GitHub Pages 会给 data/charts.js 设 Cache-Control: max-age=600（10 分钟），
+   而「检测到更新就刷新首页」要靠它 —— 加时间戳才能绕开这份缓存。
+   ⚠️ 时间戳必须**每次加载都不一样**：原来用的是「每分钟一个版本号」，
+   结果自动刷新那一刻若还没跨分钟，reload 会命中浏览器缓存（max-age=600），
+   刷了还是旧内容、而且之后不会再重试 —— 表现就是「传完谱刷新没生效」。
+   代价是每次访问都要重新下这个小文件（约 11KB），可以接受。
+   必须同步执行（后面的脚本都依赖 window.CHARTS），所以用 document.write。
+   file:// 下不能带查询参数（会找不到文件），所以按协议判断。 */
+(function () {
+  var q = location.protocol === "file:" ? "" : "?t=" + Date.now();
+  document.write('<script src="data/charts.js' + q + '"><\/script>');
+})();
+</script>
+<script src="assets/js/common.js"></script>
+<script>
+(function () {
+  WB.renderHeader({ current: "about", search: false });
+  WB.renderSidebar({ current: "about" });
+  WB.renderFooter();
+  document.title = "使用说明 - " + WB.site().title;
+})();
+</script>
+</body>
+</html>

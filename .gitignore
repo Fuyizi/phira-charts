@@ -1,0 +1,21 @@
+# ---- 系统 / 编辑器噪声 ----
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+
+# ---- 项目内部文件，不随站点发布 ----
+# .workbuddy/ 是项目笔记与工作记录，属于内部资料，不该出现在公开仓库里
+.workbuddy/
+# 注：tools/ 从 2026-10-11 起改为「跟仓库走」——
+#     后端代码 scf.js / worker.js、部署手册 scf-deploy.md、自测与冒烟测试都是需要留档的资产。
+#     真实凭证一律放在仓库外的 ~/.phira-uploader/，仓库里不该有任何副本。
+
+# ---- 凭证兜底：这几类文件永远不准进仓库 ----
+secrets.json
+*.pem
+.env
+.dev.vars
+credentials.txt
+access_keys.tsv

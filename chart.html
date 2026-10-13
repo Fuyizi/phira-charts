@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>作品详情</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/wiki.css">
+<script>/* 在样式生效前先定好主题，避免深色模式下刷新闪白 */
+(function(){try{var t=localStorage.getItem("pez-theme");
+if(!t||t==="auto"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+
+<header id="header-mount" class="site-header"></header>
+
+<div class="layout">
+  <aside id="sidebar-mount" class="sidebar"></aside>
+
+  <main class="content">
+    <div id="sample-notice" class="notice" hidden></div>
+    <div id="article"></div>
+  </main>
+
+  <aside id="rail-mount" class="rail"></aside>
+</div>
+
+<footer id="footer-mount" class="site-footer"></footer>
+
+<script>
+/* 数据文件每次都拿最新的：
+   GitHub Pages 会给 data/charts.js 设 Cache-Control: max-age=600（10 分钟），
+   而「检测到更新就刷新首页」要靠它 —— 加时间戳才能绕开这份缓存。
+   ⚠️ 时间戳必须**每次加载都不一样**：原来用的是「每分钟一个版本号」，
+   结果自动刷新那一刻若还没跨分钟，reload 会命中浏览器缓存（max-age=600），
+   刷了还是旧内容、而且之后不会再重试 —— 表现就是「传完谱刷新没生效」。
+   代价是每次访问都要重新下这个小文件（约 11KB），可以接受。
+   必须同步执行（后面的脚本都依赖 window.CHARTS），所以用 document.write。
+   file:// 下不能带查询参数（会找不到文件），所以按协议判断。 */
+(function () {
+  var q = location.protocol === "file:" ? "" : "?t=" + Date.now();
+  document.write('<script src="data/charts.js' + q + '"><\/script>');
+})();
+</script>
+<script src="assets/js/common.js"></script>
+<script src="assets/js/detail.js"></script>
+</body>
+</html>
