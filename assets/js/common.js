@@ -841,13 +841,32 @@
   };
 
   /* 页脚 + 回到顶部 */
+  /* 把一小段「轻量 markdown」转成安全 HTML —— 页脚这类文案用。
+     只认两种记号（够用，且因为**先整体转义再替换**，不会有注入风险）：
+       **加粗**            → <b>加粗</b>
+       空行分段 / 单换行   → <p> / <br>
+     其余 markdown 语法（链接、列表…）不支持 —— 要那种效果就在数据里直接写 HTML。 */
+  WB.rich = function (text) {
+    var s = String(text == null ? "" : text);
+    if (!s) return "";
+    var parts = s.split(/\n{2,}/);
+    var out = [];
+    for (var i = 0; i < parts.length; i++) {
+      var p = parts[i].trim();
+      if (!p) continue;
+      p = WB.esc(p).replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>");
+      out.push("<p>" + p.replace(/\n/g, "<br>") + "</p>");
+    }
+    return out.join("");
+  };
+
   WB.renderFooter = function () {
     var site = WB.site();
     var mount = document.getElementById("footer-mount");
     if (mount) {
       mount.className = "site-footer";
       mount.innerHTML =
-        "<p>" + WB.esc(site.footer || "") + "</p>" +
+        (site.footer ? WB.rich(site.footer) : "") +
         "<p>" + WB.esc(site.title || "") +
         (site.author ? " · by " + WB.esc(site.author) : "") +
         " · 谱面格式 <code>.pez</code> · 建议使用 Phira 打开</p>";

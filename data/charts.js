@@ -15,9 +15,19 @@ window.SITE = {
     "这里是 芣苢子fuyi 的个人自制谱仓库，收录自己制作的 Phira / 类 Phigros 谱面。\n" +
     "所有谱面以 .pez 格式提供下载，可在 Phira 中直接导入游玩。\n" +
     "同一份谱面的历史版本都能找到；想看手感的话，详情页里有内嵌的短预览，完整视频另附外链。",
-  footer: "本站谱面均为个人创作，下载后请遵守各谱面标注的转载许可。",
+  /* 页脚文案。支持轻量 markdown：**加粗**、空行分段、单换行折行。
+     其余语法（链接等）不支持 —— 要就写成 HTML（会被 WB.rich 先转义再渲染，
+     想插真 HTML 请改 assets/js/common.js 的 WB.rich）。 */
+  footer:
+    "本站为个人非商业二次创作谱面分享，**与 Phigros, Phira, Phigrim 等游戏官方无关**。\n" +
+    "版权归原作者及原权利人，仅供社区交流，禁止商用、二次分发、冒充原创。\n" +
+    "**允许在标注出完整的曲师、谱师信息下上传屏元、手元视频，不允许录制自动游玩视频**" +
+    "（展示资源包、谱面读取游玩与录制软件的除外）。\n" +
+    "如本站无意间侵害了您的著作权，请联系我删除。\n" +
+    "邮箱：2595419272@qq.com　Agent 邮箱：muxuzi@agent.qq.com",
   links: [
-    { text: "Phira 官网", url: "https://phira.moe" },
+    { text: "Phira 官网", url: "https://www.phira.com.cn/" },
+    { text: "Fuyizi's GitHub Page", url: "https://github.com/Fuyizi/phira-charts/releases" },
     { text: "B 站主页", url: "https://space.bilibili.com/3632318046537954" }
   ],
 

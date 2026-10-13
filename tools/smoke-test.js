@@ -16,9 +16,20 @@ const BASE = "http://127.0.0.1:8765/";
 const REAL_DATA_PATH = path.join(__dirname, "..", "data", "charts.js");
 const FIXTURE_PATH = path.join(__dirname, "fixtures", "charts-sample.js");
 const USE_FIXTURE = fs.existsSync(FIXTURE_PATH);
-const DATA_SRC = (USE_FIXTURE
-  ? fs.readFileSync(FIXTURE_PATH, "utf8")
-  : fs.readFileSync(REAL_DATA_PATH, "utf8"));
+const REAL_SRC = fs.readFileSync(REAL_DATA_PATH, "utf8");
+
+/* 喂给页面的数据文件 = **真实文件的 SITE 段** + **夹具的 CHARTS 段**。
+   这样 SITE（站名 / 页脚 / 外链 / 设计插槽 / 自动刷新开关）测的永远是真实配置，
+   作品数据则固定成夹具 —— 两边各自稳定，不用来回同步。 */
+const CHARTS_MARK = "window.CHARTS = [";
+function chartsTail(src) {
+  const i = src.indexOf(CHARTS_MARK);
+  return i < 0 ? "" : src.slice(i);
+}
+const REAL_SPLIT = REAL_SRC.indexOf(CHARTS_MARK);
+const DATA_SRC = (USE_FIXTURE && REAL_SPLIT > -1)
+  ? REAL_SRC.slice(0, REAL_SPLIT) + chartsTail(fs.readFileSync(FIXTURE_PATH, "utf8"))
+  : REAL_SRC;
 
 /* 从夹具（或真实数据）独立算出「已发布（status=published）的最新版条目」。
    加新作品、把某份设成私密，测试都会自动跟上，不用回来改数字。 */
@@ -1207,6 +1218,41 @@ async function waitParsed(d, want) {
     const biliLink = d.querySelector('#sidebar-mount a[href*="space.bilibili.com"]');
     ok(!!biliLink && /3632318046537954/.test(biliLink.getAttribute("href")),
       "侧栏渲染出了 B 站主页外链");
+
+    /* --- 侧栏外链 --- */
+    const phira = d.querySelector('#sidebar-mount a[href*="phira.com.cn"]');
+    ok(!!phira, "Phira 官网指向 www.phira.com.cn",
+      phira ? phira.getAttribute("href") : "没找到");
+    const rel = d.querySelector('#sidebar-mount a[href*="/phira-charts/releases"]');
+    ok(!!rel && /Fuyizi's GitHub Page/.test(rel.textContent),
+      "有仓库 releases 外链「Fuyizi's GitHub Page」",
+      rel ? rel.textContent + " -> " + rel.getAttribute("href") : "没找到");
+
+    /* --- 页脚：免责声明 + 轻量 markdown（**加粗**） --- */
+    const footEl = d.querySelector(".site-footer");
+    const foot = footEl ? footEl.textContent : "";
+    ok(/与 Phigros, Phira, Phigrim 等游戏官方无关/.test(foot),
+      "页脚有「与游戏官方无关」的声明");
+    ok(/禁止商用、二次分发、冒充原创/.test(foot), "页脚写了禁止事项");
+    ok(/不允许录制自动游玩视频/.test(foot), "页脚写了录制规则");
+    ok(/2595419272@qq\.com/.test(foot) && /muxuzi@agent\.qq\.com/.test(foot),
+      "页脚有联系邮箱（含 Agent 邮箱）");
+    ok(footEl && footEl.querySelectorAll("b").length === 2,
+      "**加粗** 被转成了真实 <b>（两处）",
+      footEl ? "实际 " + footEl.querySelectorAll("b").length : "无页脚");
+    ok(footEl && footEl.innerHTML.indexOf("**") < 0, "渲染后不残留 markdown 记号");
+    ok(!!d.querySelector(".site-footer"),
+      "所有页面都用同一个页脚挂载点（6 个页面都有 #footer-mount）");
+
+    /* --- WB.rich：轻量 markdown 转换器本身 --- */
+    ok(w.WB.rich("**粗** 正常") === "<p><b>粗</b> 正常</p>", "rich：加粗",
+      w.WB.rich("**粗** 正常"));
+    ok(w.WB.rich("上\n\n下") === "<p>上</p><p>下</p>", "rich：空行分段",
+      w.WB.rich("上\n\n下"));
+    ok(w.WB.rich("上\n下") === "<p>上<br>下</p>", "rich：单换行折行");
+    ok(w.WB.rich("<img src=x onerror=1>").indexOf("<img") < 0,
+      "rich：先转义再替换，注入进不来", w.WB.rich("<img src=x onerror=1>"));
+    ok(w.WB.rich("") === "" && w.WB.rich(null) === "", "rich：空值不报错");
 
     /* --- 悬停预览：加载就绪前不露黑屏 --- */
     ok(/\.vc-thumb-wrap\.pv-ready \.vc-preview/.test(css), "就绪后才扩散（.pv-ready）");
