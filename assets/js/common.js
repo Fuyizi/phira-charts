@@ -841,6 +841,182 @@
   };
 
   /* 页脚 + 回到顶部 */
+  /* ---------------------------------------------------------- 入场动效 --
+     参考 misayos.xyz/only-shadow 的做法，只做两件事：
+       · WB.glyphTitle(el)  把标题按字形切开，逐字错位落下（一次性，落位即静止）
+       · WB.reveal(root)    把 root 里所有 .motion-reveal 挂上「进视口才显示」
+
+     两条铁律（写在这里防止以后被改坏）：
+       ① 「初始隐藏」的样式全在 .motion-ready 作用域下（该类由页面 head 里的
+          内联脚本加上）。没 JS / 动画没跑起来时内容依然可见，不会整屏空白。
+       ② 只做一次性入场，**绝不 infinite 循环**（主人 2026-10-17 明确否掉「一直飘」）。 */
+
+  /* 逐字形标题。用 Array.from 切字 —— 别用 charAt / length，emoji 会被代理对劈开。 */
+  WB.glyphTitle = function (el) {
+    if (!el || el.getAttribute("data-glyphs") === "1") return;
+    var text = el.textContent || "";
+    if (!text) return;
+    var glyphs = Array.from(text);
+    el.textContent = "";
+    el.classList.add("title-reveal");
+    el.setAttribute("data-glyphs", "1");
+    for (var i = 0; i < glyphs.length; i++) {
+      var g = document.createElement("span");
+      g.className = "g";
+      g.style.animationDelay = (i * 40) + "ms";
+      g.textContent = glyphs[i] === " " ? "\u00A0" : glyphs[i];
+      el.appendChild(g);
+    }
+  };
+
+  /* 滚动进场。用 IntersectionObserver 而不是监听 scroll ——
+     后者每滚一下都要重算位置，长页面会掉帧。 */
+  WB.reveal = function (root) {
+    var scope = root || document;
+    var els = scope.querySelectorAll(".motion-reveal:not(.is-revealed)");
+    if (!els.length) return;
+    var items = Array.prototype.slice.call(els);
+
+    function showAll() {
+      for (var i = 0; i < items.length; i++) items[i].classList.add("is-revealed");
+    }
+    if (!("IntersectionObserver" in window)) { showAll(); return; }
+
+    var io = new IntersectionObserver(function (entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (!entries[i].isIntersecting) continue;
+        entries[i].target.classList.add("is-revealed");
+        io.unobserve(entries[i].target);      /* 只进一次，回头再滚不重播 */
+      }
+    }, { rootMargin: "0px 0px -8% 0px", threshold: .08 });
+    for (var i = 0; i < items.length; i++) io.observe(items[i]);
+
+    /* 保险丝：过一会儿把「已经在视口里但还没显示」的一律点亮 ——
+       绝不让内容永久隐身（IO 在某些极端情况下可能不触发）。 */
+    setTimeout(function () {
+      for (var i = 0; i < items.length; i++) {
+        var el = items[i];
+        if (el.classList.contains("is-revealed")) continue;
+        var r = el.getBoundingClientRect();
+        if (r.top < (window.innerHeight || 0) && r.bottom > 0) {
+          el.classList.add("is-revealed");
+        }
+      }
+    }, 2600);
+  };
+
+  /* ------------------------------------------------------ 卡片光标光斑 --
+     卡片底色是一道跟着鼠标走的径向渐变（光标处最浅、往外渐深）。
+     所有卡片要**共用同一道光斑** —— 视觉上是一道光扫过整排卡片。
+
+     ⚠️ 为什么不用 background-attachment: fixed（走过弯路，别再改回去）：
+       fixed 名义上以**视口**为基准，但只要卡片（或它的祖先）身上有
+       translate / transform / filter，这张卡片就成了「包含块」，
+       fixed 会被劫持成**以卡片自己为基准**。而卡片身上正好有：
+         · 入场动画的 translate（wb-rise）
+         · 悬停抬升的 transform（translateY(-3px)）
+       于是鼠标的视口坐标被当成卡片局部坐标来用 —— 页面一滚动，
+       卡片位置变了而坐标没变，整片光斑就整体偏掉。
+       （实测：往卡片里插一个 position:fixed 的元素，它落在卡片左上角，
+         而不是视口左上角 —— 说明卡片确实把 fixed 抓住了。）
+
+     所以改成自己算，很简单：
+        卡片局部坐标 = 鼠标在视口里的位置 − 这张卡片的左上角（getBoundingClientRect）
+     一张一张写进 --gx / --gy。数学上跟「一道全局光斑」完全等价，
+     而且**完全不受 translate / transform 影响**。
+
+     什么时候重算：
+       ① 鼠标移动 —— head 里那段极早的脚本会调 window.__WB_GLOW()
+       ② 页面滚动 —— 卡片动了，同一只鼠标的局部坐标就变了，必须重算
+       ③ 窗口尺寸变化
+       ④ 列表重新渲染之后 —— home.js 每次 render() 完调一次本函数
+       ⑤ **布局自己变动之后** —— 这条最容易漏：实测过侧栏比卡片晚渲染，
+          卡片从 x=76 被挤到 x=206，光斑坐标就成了旧的（整片偏 130px）。
+          所以还盯着 body / 卡片容器的尺寸变化（ResizeObserver），
+          外加 load 与两次延迟补算当保险丝。
+
+     写法：一帧最多算一次（rAF 节流）；**先量完所有卡片、再统一写样式**，
+     避免边读边写让浏览器反复重排。 */
+  WB.glowFollow = function () {
+    if (!document.querySelectorAll) return;
+
+    var queued = false;
+    var raf = window.requestAnimationFrame || function (f) { return setTimeout(f, 16); };
+
+    /* 光斑此刻在**视口**里的位置。
+       浏览器没有「读取鼠标位置」的 API，位置只能从指针事件里来；
+       用户还没动过鼠标时，先给一个视口正中偏上的位置当起点。 */
+    function lightAt() {
+      var p = window.__WB_PTR;
+      if (p && p.seen) return { x: p.x, y: p.y };
+      var vw = window.innerWidth || 0, vh = window.innerHeight || 0;
+      return { x: vw / 2, y: vh * 0.42 };
+    }
+
+    function paint() {
+      queued = false;
+      var cards = document.querySelectorAll(".vcard");
+      if (!cards.length) return;
+
+      var L = lightAt();
+      var boxes = [], i, r;
+
+      /* ① 先量 */
+      for (i = 0; i < cards.length; i++) {
+        r = cards[i].getBoundingClientRect();
+        boxes.push({ left: r.left, top: r.top });
+      }
+      /* ② 再统一写 */
+      for (i = 0; i < cards.length; i++) {
+        cards[i].style.setProperty("--gx", (L.x - boxes[i].left) + "px");
+        cards[i].style.setProperty("--gy", (L.y - boxes[i].top) + "px");
+      }
+    }
+
+    function schedule() {
+      if (queued) return;
+      queued = true;
+      raf(paint);
+      /* 兜底：rAF 在**无头浏览器**、后台标签页、以及某些省电模式下压根不会被调度，
+         那样光斑会一直停在旧坐标（实测踩到过：事件收到了、坐标却没更新）。
+         这里再挂一个定时器；只要 rAF 已经画过了，queued 早就是 false，这次就是空转。 */
+      setTimeout(function () { if (queued) paint(); }, 64);
+    }
+
+    /* 监听只挂一次；之后再调 WB.glowFollow() 就是「立刻重算一遍」 */
+    if (!WB._glowBound) {
+      WB._glowBound = true;
+      /* 滚动：window 和 document 都挂（视口滚动的目标是 document，冒泡到 window；
+         不同浏览器历史上两种写法都出现过）。重复触发没代价 —— schedule 自带节流。 */
+      window.addEventListener("scroll", schedule, { passive: true });
+      document.addEventListener("scroll", schedule, { passive: true });
+      window.addEventListener("resize", schedule);
+      window.addEventListener("load", schedule);
+      if (window.ResizeObserver) {
+        try {
+          WB._glowRO = new ResizeObserver(schedule);
+          if (document.body) WB._glowRO.observe(document.body);
+        } catch (e) { WB._glowRO = null; }
+      }
+    }
+
+    /* 卡片容器每次 render 都是新的，重新盯一下它的尺寸（侧栏出现、换行数都会改它） */
+    var grid = document.querySelector(".thumb-grid");
+    if (WB._glowRO && grid && grid !== WB._glowGrid) {
+      try {
+        if (WB._glowGrid) WB._glowRO.unobserve(WB._glowGrid);
+        WB._glowRO.observe(grid);
+        WB._glowGrid = grid;
+      } catch (e) {}
+    }
+
+    window.__WB_GLOW = schedule;     /* 供 head 里那段脚本调用 */
+    schedule();
+    /* 保险丝：渲染后布局还可能被字体 / 封面图 / 侧栏推一下，补算两次 */
+    setTimeout(schedule, 160);
+    setTimeout(schedule, 700);
+  };
+
   /* 把一小段「轻量 markdown」转成安全 HTML —— 页脚这类文案用。
      只认两种记号（够用，且因为**先整体转义再替换**，不会有注入风险）：
        **加粗**            → <b>加粗</b>

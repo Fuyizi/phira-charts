@@ -1107,6 +1107,43 @@ async function waitParsed(d, want) {
     const w = dom.window;
     ok(realErrors(errs).length === 0, "无脚本运行时错误", realErrors(errs).join(" | "));
 
+    /* --- 入场动效系统（2026-10-17 落地，做法参考 misayos.xyz/only-shadow）--- */
+    ok(/--motion-ease:\s*cubic-bezier\(\.2, \.7, \.2, 1\)/.test(css),
+      "有统一的缓动参数 --motion-ease");
+    ok(/--motion-fast:\s*180ms/.test(css) && /--motion-slow:\s*650ms/.test(css),
+      "有统一的时长参数（快 180 / 慢 650）");
+    ok(/\.motion-ready \.motion-reveal \{/.test(css),
+      "通用错位进场 .motion-reveal，且挂在 .motion-ready 作用域下");
+    ok(/\.motion-ready \.motion-reveal\.is-revealed \{/.test(css), "有揭示后的终态规则");
+    ok(css.indexOf("@keyframes wb-glyph-in") > -1, "有逐字形入场的关键帧");
+    ok(/@keyframes wb-glyph-in\s*\{\s*from\s*\{/.test(css),
+      "逐字形关键帧里写了 from（不能只写 to）");
+    ok(/\.motion-ready \.sidebar \{[^}]*wb-rise/.test(css), "侧栏整体淡入上浮");
+    ok(/\.thumb-grid\.wb-fresh \.vcard\s*\{[^}]*animation-delay:\s*var\(--rise-delay/.test(css),
+      "卡片入场带错位延迟（--rise-delay）");
+    ok(css.indexOf(".motion-ready .title-reveal .g { animation: none; }") > -1,
+      "开了「减少动态效果」时逐字形动画会被关掉");
+    /* 铁律：入场动效只做一次性，不做无限循环（status-dot.busy 那个加载脉冲是唯一例外） */
+    ok(!/(motion-reveal|title-reveal|wb-glyph-in|\.sidebar)[^}]{0,200}?infinite/.test(css),
+      "入场动效里没有 infinite 循环");
+
+    /* --- 首屏真的用上了这套 --- */
+    const indexSrc = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
+    ok(/classList\.add\("motion-ready"\)/.test(indexSrc),
+      "首页在 <head> 里就加上 motion-ready（避免闪一下才隐藏）");
+    const st = d.querySelector("#space-mount .sb-title");
+    ok(!!st && st.querySelectorAll(".g").length === 11,
+      "站名被切成逐字（11 个字）", st ? "实际 " + st.querySelectorAll(".g").length : "没找到");
+    ok(!!st && st.textContent.replace(/\u00A0/g, " ") === "Phira 自制谱仓库",
+      "切字之后文字内容没丢", st && st.textContent);
+    ok(!!d.querySelectorAll(".motion-reveal").length &&
+      d.querySelector(".motion-reveal").classList.contains("is-revealed"),
+      "信息条等静态区块进视口后立刻被揭示");
+    const cardDelays = Array.prototype.map.call(d.querySelectorAll("#card-grid .vcard"),
+      (c) => c.style.getPropertyValue("--rise-delay").trim());
+    ok(cardDelays.length > 1 && cardDelays[0] === "0ms" && cardDelays[1] === "45ms",
+      "卡片按序号错位出发（0 / 45 / 90…）", cardDelays.join(" , "));
+
     /* --- BPM：首页只给区间，详情页才摊开全值 --- */
     ok(w.WB.bpmText({ bpm: [169, 190] }) === "169–190", "简版 BPM 只给区间",
       w.WB.bpmText({ bpm: [169, 190] }));
@@ -1127,7 +1164,56 @@ async function waitParsed(d, want) {
     ok(/autoplay=1/.test(pv), "悬停预览地址带 autoplay=1", pv);
     ok(/muted=1/.test(pv), "悬停预览一律静音（muted=1）", pv);
     ok(!!d.querySelector("#card-grid .vc-preview"), "封面里有预览浮层");
-    ok(!!d.querySelector("#card-grid .vc-pv-tag"), "有「静音预览」角标");
+    ok(!d.querySelector(".vc-pv-tag"), "「静音预览」角标已移除（主人 2026-10-17 要求）");
+    /* --- 卡片外观：无边框 + 跟着鼠标走的渐变底色 + 内容不贴边 --- */
+    ok(/--card-bg:\s*#f/.test(css) && /--card-bg-hi:\s*#f{6}|--card-bg-hi:\s*#fff/.test(css),
+      "卡片底色两端各有变量（远端深、光标处浅）");
+    ok(/\.vcard\s*\{[\s\S]{0,1600}?background-image:\s*radial-gradient\(circle var\(--card-glow-r/.test(css),
+      "卡片底色是径向渐变（光斑）");
+    /* 查「规则里真的没有」得先去掉注释 —— .vcard 的注释里正好写着「别改回 fixed」。
+       （body 上那条 background-attachment 是页面底纹，跟卡片无关，别误伤。） */
+    const cssBare = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    ok(!/\.vcard\s*\{[^}]*background-attachment/.test(cssBare),
+      "★ .vcard 里没有 background-attachment —— 卡片身上的 translate/transform 会把 fixed 的基准劫持到卡片自己身上，一滚动坐标就整体偏");
+    ok(/at var\(--gx,\s*50%\)\s+var\(--gy,\s*42%\)/.test(cssBare),
+      "光斑圆心读 --gx / --gy（卡片**局部**坐标），并带默认位置兜底");
+    ok(!/\.vcard\s*\{[\s\S]{0,600}?border:\s*1px/.test(css), "卡片没有边框");
+    ok(/--card-pad:\s*9px/.test(css), "内边距有独立变量（9px）");
+    ok(/\.vcard\s*\{[^}]*padding:\s*var\(--card-pad/.test(css), "卡片四周留了内边距");
+    ok(/\.vcard:hover\s*\{[^}]*box-shadow/.test(css), "悬停阴影在卡片上");
+
+    /* 光斑坐标：位置采集在 <head>（越早越好），换算在 common.js 的 WB.glowFollow()，
+       因为「鼠标在这张卡里的位置」= 鼠标视口坐标 − 卡片左上角，还得跟着滚动重算。 */
+    ok(/addEventListener\("pointermove",\s*onMove/.test(indexSrc),
+      "首页在 <head> 里就挂了指针监听（拿到位置越早越好）");
+    ok(/window\.__WB_PTR\s*=/.test(indexSrc) && /P\.x\s*=\s*e\.clientX/.test(indexSrc),
+      "把光标位置记进 window.__WB_PTR");
+    const glowSrc = fs.readFileSync(
+      path.join(__dirname, "..", "assets", "js", "common.js"), "utf8");
+    ok(/WB\.glowFollow = function/.test(glowSrc), "暴露了 glowFollow()（负责换算 + 重算）");
+    ok(/getBoundingClientRect/.test(glowSrc) &&
+      /"--gx"/.test(glowSrc) && /"--gy"/.test(glowSrc),
+      "按「视口坐标 − 卡片左上角」算出卡片局部坐标再写进 --gx / --gy");
+    ok(/addEventListener\("scroll",\s*schedule/.test(glowSrc),
+      "★ 监听滚动 —— 卡片位置一变就得重新换算（否则滚动时整片光斑会偏）");
+    ok(/new ResizeObserver/.test(glowSrc) && /addEventListener\("load",\s*schedule/.test(glowSrc),
+      "布局自己变动（侧栏出现 / 字体图片到位）后也会重算 —— 否则坐标会留在旧位置");
+    ok(/requestAnimationFrame/.test(glowSrc), "重算用 rAF 节流（一帧最多一次）");
+    /* 真派发一次指针事件：jsdom 里元素尺寸都是 0（卡片左上角 = 0,0），
+       所以 --gx / --gy 应当正好等于鼠标的 clientX / clientY */
+    w.dispatchEvent(new w.MouseEvent("mousemove", { clientX: 320, clientY: 430, bubbles: true }));
+    await new Promise((r) => setTimeout(r, 90));
+    const card0 = d.querySelector("#card-grid .vcard");
+    ok(!!card0 && card0.style.getPropertyValue("--gx") === "320px" &&
+      card0.style.getPropertyValue("--gy") === "430px",
+      "光斑按鼠标实际位置换算成卡片局部坐标",
+      card0 ? card0.style.getPropertyValue("--gx") + " / " + card0.style.getPropertyValue("--gy") : "无卡片");
+    const subs = d.querySelectorAll("#card-grid .vcard .vc-sub");
+    ok(subs.length > 0 && !/谱师/.test(subs[0].textContent),
+      "第一行只放曲师，不含谱师", subs.length ? subs[0].textContent : "无");
+    ok(!!d.querySelector("#card-grid .vcard .vc-sub-charter"), "谱师名义单独占一行");
+    ok(/\.vc-sub-charter\s*\{[^}]*margin-top:\s*0/.test(css), "两行之间不留额外间距（行距压紧）");
+    ok(/\.vc-sub\s*\{[^}]*line-height:\s*1\.3/.test(css), "曲师/谱师两行的行高收到 1.3");
     ok(css.indexOf(".vc-preview") > -1 && css.indexOf("circle(75% at 50% 50%)") > -1,
       "CSS 是从中心扩散的圆形 clip-path");
     ok(/\.vc-preview\s*\{[^}]*pointer-events:\s*none/.test(css),
@@ -1268,7 +1354,12 @@ async function waitParsed(d, want) {
       "iframe 先透明，就绪后才显形");
     ok(!/\.vc-preview\s*\{[^}]*background:\s*#000/.test(css), "预览层不再铺黑底");
     ok(/addEventListener\("load"/.test(homeSrc), "iframe 的 load 到了才扩散出去");
-    ok(/\.vc-thumb-wrap\.pv-ready \.vc-pv-tag/.test(css), "角标也是就绪后才出现");
+    ok(!/vc-pv-tag/.test(css) && !/vc-pv-tag/.test(homeSrc),
+      "「静音预览」角标的 HTML 与 CSS 都清干净了");
+    ok(homeSrc.indexOf("[?&]muted=1") > -1,
+      "宁可预览静音：建 iframe 之前还有一道兜底，不依赖地址拼装");
+    ok(homeSrc.indexOf("vc-sub-charter") > -1,
+      "卡片里曲师与谱师名义是两行（谱师另起一行）");
 
     dom.window.close();
   }
@@ -1288,7 +1379,10 @@ async function waitParsed(d, want) {
 
     const REQUIRED = ["id", "level", "version", "seq", "title", "owner", "file"];
     const missing = [];
-    real.forEach((c, i) => {
+    /* 标记了 sample: true 的是**本地测试用的示例卡片**（主人要求放的），
+       它们本来就是要试各种边缘情况（比如「难度留空」），所以豁免字段体检 ——
+       真作品一条都不豁免。 */
+    real.filter((c) => !c.sample).forEach((c, i) => {
       REQUIRED.forEach((k) => {
         if (!(k in c)) missing.push("#" + i + " " + (c.title || c.id) + " 缺 " + k);
       });

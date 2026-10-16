@@ -19,6 +19,12 @@
   --card-radius:       6px;
   --card-shadow:       none;                       /* 静止时的投影，追求扁平就留 none */
   --card-shadow-hover: 0 6px 18px rgba(0, 0, 0, .14);
+  /* ---- 卡片底色 = 一道跟着鼠标走的光斑（无边框）----
+     两端差异刻意做小：光标处最浅，往外渐深。深色 / 浅色模式都是「由浅变深」。 */
+  --card-bg:           #f3f4f6;   /* 离光标远的那一端（深一点） */
+  --card-bg-hi:        #ffffff;   /* 光标处那一端（浅一点） */
+  --card-glow-r:       560px;     /* 光斑半径：越大，光斑能「照到」的卡片越多 */
+  --card-pad:          9px;       /* 卡片内边距：内容不贴卡片边缘 */
 
   /* —— 骨架尺寸 —— */
   --header-height:     52px;    /* 顶栏高度 */
@@ -85,6 +91,18 @@
   --radius:        2px;
   --shadow-pop:    0 2px 8px rgba(0, 0, 0, .14);
 
+  /* ---- 动效参数（一套走遍全站，别再一处一个值）----
+     参考 misayos.xyz/only-shadow 的做法。两条铁律：
+       ① 只做**一次性入场**，绝不 infinite 循环（主人 2026-10-17 明确否掉「一直飘」）
+       ② 所有「初始隐藏」的样式都挂在 .motion-ready 作用域下（该类由 JS 加），
+          这样没 JS / 动画没跑起来时内容依然可见，不会整屏空白 */
+  --motion-ease:   cubic-bezier(.2, .7, .2, 1);
+  --motion-fast:   180ms;
+  --motion-medium: 300ms;
+  --motion-slow:   650ms;
+  --reveal-delay:  0ms;   /* 错位用：由 JS / 行内样式给每个元素一个递增的值 */
+  --rise-delay:    0ms;   /* 卡片错位用：由 home.js 按序号写进每张卡 */
+
   --font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont,
                "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
                "Noto Sans SC", "Source Han Sans SC", sans-serif;
@@ -99,6 +117,10 @@ html[data-theme="dark"] {
   --bg-sub:        #27292d;
   --bg-sub-2:      #33363b;
   --bg-code:       #23262a;
+
+  /* 深色下同理：光标处稍亮，往外压暗（两端差异同样做小） */
+  --card-bg:       #23262a;
+  --card-bg-hi:    #34383e;
 
   --text:          #eaecf0;
   --text-sub:      #c8ccd1;
@@ -933,19 +955,42 @@ a.chip:hover { text-decoration: none; }
   display: flex;
   flex-direction: column;
   min-width: 0;
+  /* 卡片**不要边框**；底色是一道跟着鼠标走的光斑 ——
+     光标处最浅，往外渐深（深色 / 浅色模式都是「由浅变深」），两端差异很小。
+
+     ★ 坐标 --gx / --gy 是「光斑在**这张卡片内部**的实际位置（px）」，
+       由 common.js 的 WB.glowFollow() 算好写进行内样式：
+           卡片局部坐标 = 鼠标在视口里的位置 − 这张卡片的左上角
+       每张卡都这么算，效果就等于「所有卡片共用同一道光斑」——
+       某张卡上光斑落在哪，正好是全局那道光线相对它的位置，
+       所以视觉上是一道光扫过整排卡片，而不是每张卡各自亮一下。
+
+     ⚠️ 别改回 background-attachment: fixed！！（走过这条弯路）
+       fixed 名义上以视口为基准，但只要卡片（或祖先）身上有 translate / transform，
+       卡片就成了「包含块」，fixed 会被劫持成**以卡片自己为基准** ——
+       卡片正好有入场动画的 translate 和悬停抬升的 transform，于是鼠标坐标
+       被当成卡片局部坐标用，**一滚动整片光斑就偏**。
+       实测：往卡片里插一个 position:fixed 的元素，它落在卡片左上角而不是视口左上角。
+
+     下面 50% / 42% 只是「JS 还没跑起来」时的兜底位置，正常都会被行内样式覆盖。 */
+  background-image: radial-gradient(circle var(--card-glow-r, 560px)
+      at var(--gx, 50%) var(--gy, 42%),
+      var(--card-bg-hi, #fff) 0%, var(--card-bg, #f3f4f6) 72%);
+  background-color: var(--card-bg, #f3f4f6);   /* 渐变没画出来时的兜底底色 */
+  border-radius: var(--card-radius);
+  padding: var(--card-pad, 9px);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow .18s;
+}
+.vcard:hover {
+  box-shadow: var(--card-shadow-hover);
 }
 .vc-thumb-wrap {
   position: relative;
-  border-radius: var(--card-radius);
+  /* 封面贴着卡片的内边缘，圆角比卡片小一点才不露角 */
+  border-radius: calc(var(--card-radius) - 2px);
   overflow: hidden;
-  background: var(--bg-sub);
-  border: 1px solid var(--card-border, var(--border-soft));
-  box-shadow: var(--card-shadow);
-  transition: box-shadow .18s, border-color .18s;
-}
-.vcard:hover .vc-thumb-wrap {
-  box-shadow: var(--card-shadow-hover);
-  border-color: var(--border);
+  background: var(--bg-sub-2);
 }
 .vc-thumb {
   display: block;
@@ -1036,31 +1081,8 @@ a.chip:hover { text-decoration: none; }
 /* 播放时把时长角标收掉，别跟播放器自己的控件叠在一起 */
 .vc-thumb-wrap.pv-on .vc-dur { opacity: 0; }
 
-/* 左上角「静音预览」小标签：让访客知道为什么没声音 */
-.vc-pv-tag {
-  position: absolute;
-  left: 6px;
-  top: 6px;
-  z-index: 2;
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 1px 6px;
-  font-size: 11px;
-  line-height: 16px;
-  color: #fff;
-  background: rgba(0, 0, 0, .55);
-  border-radius: 999px;
-  opacity: 0;
-  transform: translateY(-3px);
-  pointer-events: none;
-  transition: opacity .2s ease, transform .24s cubic-bezier(.22, .61, .36, 1);
-}
-.vc-pv-tag svg { width: 11px; height: 11px; fill: currentColor; }
-.vc-thumb-wrap.pv-ready .vc-pv-tag { opacity: 1; transform: none; }
-
 /* 卡片下方的曲目信息 */
-.vc-body { padding: 8px 2px 0; }
+.vc-body { padding: 8px 1px 0; }
 .vc-title {
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -1076,10 +1098,13 @@ a.chip:hover { text-decoration: none; }
   margin: 3px 0 0;
   font-size: 11.5px;
   color: var(--text-mute);
+  line-height: 1.3;                /* 压紧行距，两行贴在一起 */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* 谱师名义单独占一行，紧跟在曲师下面（行距拉小，两行看着是一组） */
+.vc-sub-charter { margin-top: 0; line-height: 1.25; }
 .vc-levels {
   margin: 5px 0 0;
   display: flex;
@@ -1713,7 +1738,68 @@ pre.code .copy-btn {
 /* ⚠️ 入场动画只挂在「直接渲染」的那一次（.wb-fresh 由 home.js 打上）。
    过渡层里渲染出来的那批刻意不挂 —— 否则过渡收尾把 .wb-sliding 摘掉的
    那一瞬间动画会被重新触发，卡片忽然又浮一次，看着就是画面往上跳。 */
-.thumb-grid.wb-fresh .vcard { animation: wb-rise .38s cubic-bezier(.22, .61, .36, 1) both; }
+.thumb-grid.wb-fresh .vcard {
+  animation: wb-rise .38s cubic-bezier(.22, .61, .36, 1) both;
+  /* 卡片错位落下：序号越大晚一点出发（--rise-delay 由 home.js 写进行内样式） */
+  animation-delay: var(--rise-delay, 0ms);
+}
+
+/* ==========================================================================
+   入场动效系统（参考 misayos.xyz/only-shadow，代码是重写的）
+   两条铁律写在 :root 的动效参数那段里，改之前先看那里。
+   ========================================================================== */
+
+/* ---- ① 通用错位进场 ----
+   一块内容一个 .motion-reveal，进视口时「淡入 + 从下方 20px 归位」；
+   错位靠行内的 --reveal-delay 排出队形。
+   触发由 common.js 的 WB.reveal() 用 IntersectionObserver 负责。 */
+.motion-ready .motion-reveal {
+  opacity: 0;
+  translate: 0 20px;
+  transition: opacity var(--motion-slow) var(--motion-ease),
+              translate var(--motion-slow) var(--motion-ease);
+  transition-delay: var(--reveal-delay, 0ms);
+  pointer-events: none;
+}
+.motion-ready .motion-reveal.is-revealed {
+  opacity: 1;
+  translate: 0 0;
+  pointer-events: auto;
+}
+/* 键盘焦点进去就立刻显示，别让用户对着看不见的东西按 Tab */
+.motion-ready .motion-reveal:focus-within {
+  opacity: 1; translate: 0 0; transition: none; pointer-events: auto;
+}
+
+/* ---- ② 逐字形标题 ----
+   每个字从下方 18px、带 5px 模糊落位，逐字延迟递增（JS 写 animation-delay）。
+   ⚠️ 刻意不做「落位后一直飘」那层循环 —— 落位即静止。 */
+.title-reveal .g { display: inline-block; }
+.motion-ready .title-reveal .g {
+  animation: wb-glyph-in var(--motion-slow) var(--motion-ease) both;
+}
+@keyframes wb-glyph-in {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(.97); filter: blur(5px); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); filter: blur(0); }
+}
+
+/* ---- ③ 侧栏整体淡入上浮（它是骨架里就有的，直接走 CSS 动画）---- */
+.motion-ready .sidebar {
+  animation: wb-rise var(--motion-slow) var(--motion-ease) both;
+  animation-delay: 60ms;
+}
+
+/* ---- ④ 无障碍：系统开了「减少动态效果」就全关，内容立刻可见 ---- */
+@media (prefers-reduced-motion: reduce) {
+  .motion-ready .motion-reveal,
+  .motion-ready .motion-reveal:focus-within {
+    opacity: 1; translate: 0 0; transition: none; pointer-events: auto;
+  }
+  .motion-ready .title-reveal .g { animation: none; }
+  .motion-ready .sidebar { animation: none; }
+  .thumb-grid.wb-fresh .vcard { animation: none; }
+  .motion-ready .thumb-grid .vcard { transition: none; }
+}
 /* 详细列表用**同一套**入场动效（从下浮起 + 淡入）。
    注意挂在 .table-wrap 上而不是 <tr> 上 —— tr 能不能吃 transform 各家浏览器
    并不一致，包一层普通块元素最稳。 */

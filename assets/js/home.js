@@ -132,17 +132,20 @@
     mount.innerHTML =
       "<div>" +
         '<h1 class="sb-title">' + WB.esc(site.title || "自制谱仓库") + "</h1>" +
-        '<p class="sb-stats">' + bits.join(" · ") +
+        '<p class="sb-stats motion-reveal" style="--reveal-delay:140ms">' + bits.join(" · ") +
           (latest && latest.date ? ' · 最近更新 <b>' + WB.esc(latest.date) + "</b>" : "") +
         "</p>" +
       "</div>" +
       /* 刻意只放一行小字：UP 主元素保持最低存在感 */
       /* 手机端专用：「操作说明」入口挪到署名前面（桌面端用 CSS 隐藏），
          窄屏下署名再换一行 —— 见 .sb-by .sb-author 那条规则 */
-      '<p class="sb-by">' +
+      '<p class="sb-by motion-reveal" style="--reveal-delay:260ms">' +
         '<a class="sb-howto" href="about">操作说明</a>' +
         (site.author ? '<span class="sb-author">by ' + WB.esc(site.author) + "</span>" : "") +
         "<br>" + WB.esc(site.tagline || "") + "</p>";
+
+    /* 站名逐字落下（一次性，落位即静止） */
+    WB.glyphTitle(mount.querySelector(".sb-title"));
   }
 
   /* -------------------------------------------------------- 标签页 -- */
@@ -383,9 +386,6 @@
     return '<div class="thumb-grid" id="card-grid">' + list.map(function (c) {
       var bili = WB.biliUrl(c);
       var n = verCount(c);
-      var sub = [c.artist || "未知曲师",
-                 WB.creditLabel(c) ? "谱师 " + WB.creditLabel(c) : ""]
-        .filter(Boolean).join(" · ");
       var dur = WB.fmtDuration(c.duration);
       /* 有短预览的作品才挂悬停播放层。这里只决定**标不标记**（顺带把
          已经拼好的播放地址存进 data-pv），真正要不要响应悬停由
@@ -403,15 +403,18 @@
           '<a class="vc-dl" href="' + WB.attrUrl(WB.downloadUrl(c)) + '" download="' +
             WB.esc(WB.downloadName(c)) + '" ' +
             'title="下载 ' + WB.esc(WB.downloadName(c)) + '">' + WB.icon("download") + "</a>" +
-          (pvUrl
-            ? '<span class="vc-pv-tag">' + WB.icon("mute") + "静音预览</span>" +
-              '<span class="vc-preview" aria-hidden="true"></span>'
-            : "") +
+          (pvUrl ? '<span class="vc-preview" aria-hidden="true"></span>' : "") +
         "</div>" +
         '<div class="vc-body">' +
           '<a class="vc-title" href="' + WB.esc(WB.detailUrl(c)) + '">' +
             WB.esc(c.titleZh || c.title) + "</a>" +
-          '<p class="vc-sub" title="' + WB.esc(sub) + '">' + WB.esc(sub) + "</p>" +
+          /* 曲师一行、谱师名义另起一行（主人 2026-10-17 要求拆开） */
+          '<p class="vc-sub" title="' + WB.esc(c.artist || "未知曲师") + '">' +
+            WB.esc(c.artist || "未知曲师") + "</p>" +
+          (WB.creditLabel(c)
+            ? '<p class="vc-sub vc-sub-charter" title="谱师名义 ' + WB.esc(WB.creditLabel(c)) + '">谱师 ' +
+              WB.esc(WB.creditLabel(c)) + "</p>"
+            : "") +
           '<div class="vc-levels">' + WB.levelBadge(c) +
             '<span class="vc-ver">' + WB.esc(c.version || "") + "</span>" +
             (n > 1 ? '<span class="vc-ver" title="这份谱共有 ' + n + ' 个版本">' +
@@ -561,6 +564,10 @@
       var box = wrap.querySelector(".vc-preview");
       var url = wrap.getAttribute("data-pv");
       if (!box || !url) return;
+      /* 兜底保证：**主页的悬停预览任何时候都静音**。
+         地址在渲染时就拼好了（带 muted=1），这里再确认一次 ——
+         万一以后有人改了生成逻辑，也不会漏出声音。 */
+      if (!/[?&]muted=1/.test(url)) url += "&muted=1";
       var f = document.createElement("iframe");
       f.setAttribute("scrolling", "no");
       f.setAttribute("frameborder", "0");
@@ -616,6 +623,16 @@
        挂在两种视图各自的根容器上，所以切过去的那一刻都会有。 */
     var fresh = box.querySelector(".thumb-grid, .table-wrap");
     if (fresh) fresh.classList.add("wb-fresh");
+    /* 缩略图错位落下：每张卡晚 45ms 出发（排到第 10 张为止，再多就不延了）——
+       机制还是原来那条 wb-rise，只是加了出发时间差。 */
+    Array.prototype.forEach.call(box.querySelectorAll(".thumb-grid .vcard"), function (c, i) {
+      c.style.setProperty("--rise-delay", Math.min(i, 9) * 45 + "ms");
+    });
+
+    /* 卡片底色那道光斑：卡片是刚重建的，得重新算一遍「鼠标在每张卡里的位置」。
+       （坐标换算和滚动重算都在 WB.glowFollow 里，见 common.js 的注释：
+         这里绝不能用 background-attachment: fixed，会被卡片的 translate 劫持。） */
+    if (WB.glowFollow) WB.glowFollow();
 
     var rc = document.getElementById("result-count");
     if (rc) {
@@ -684,6 +701,8 @@
     renderFilterBar();
     render();
     WB.renderFooter();
+    /* 入场动效：把视口内的静态区块（信息条 / 侧栏 / 关于本站）点亮 —— 错位浮现，一次性 */
+    WB.reveal(document);
     /* 窗宽变了，两条滑动指示条都要重新量一次 */
     window.addEventListener("resize", function () { moveTabInk(); moveSegPill(); });
 
