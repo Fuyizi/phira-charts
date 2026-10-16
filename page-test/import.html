@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<!-- 本网页已弃用，仅作留档 -->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>导入工具（旧版）</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/wiki.css">
+<script>/* 在样式生效前先定好主题，避免深色模式下刷新闪白 */
+(function(){try{var t=localStorage.getItem("pez-theme");
+if(!t||t==="auto"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
+</head>
+<body>
+
+<header id="header-mount" class="site-header"></header>
+
+<div class="layout no-rail">
+  <aside id="sidebar-mount" class="sidebar"></aside>
+
+  <main class="content">
+    <h1 class="page-title">.pez 导入工具（旧版）</h1>
+    <p class="page-sub">把谱面包拖进来，自动读出曲名、曲师、难度和音符数，生成能直接粘贴的数据条目</p>
+
+    <div class="notice">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 1 21h22L12 2zm1 14h-2v2h2v-2zm0-7h-2v5h2V9z"/></svg>
+      <div><b>这是早期版本，只保留「解析」功能。</b><br>
+      新版在 <a href="upload">谱面上传</a> —— 它完全包含这一页，而且能在核对之后直接提交到仓库。
+      这一页继续留着，是为了老链接不失效。</div>
+    </div>
+
+    <div class="hint">
+      全程在浏览器本地解压，文件不会上传到任何服务器。支持一次拖入多个文件。
+    </div>
+
+    <div id="jszip-warn" class="notice" hidden></div>
+
+    <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="拖入或点击选择 .pez 文件">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 17h2V9h3.5L12 4.5 7.5 9H11v8zM4 19h16v2H4z"/></svg>
+      <span class="dz-title">把 .pez 文件拖到这里</span>
+      <span class="dz-sub">或者点击选择文件。支持多选，会逐个解析。也可以直接把文件拖到页面任意位置。</span>
+      <input id="file-input" type="file" accept=".pez,.zip" multiple hidden>
+    </div>
+
+    <div id="file-list"></div>
+    <div id="editor-mount"></div>
+    <div id="batch-mount"></div>
+
+    <h2 class="section" id="flow">完整的加谱流程</h2>
+    <ol class="steps">
+      <li><b>把谱面包拖进上面的框</b><br>解析完成后点「编辑条目」，把猜错的字段改对。</li>
+      <li><b>把 .pez 本体放进 <code>charts/</code> 文件夹</b><br>
+        文件名要等于条目里的 <code>id</code>，比如 id 是 <code>aurora</code>，
+        文件就得叫 <code>charts/aurora.pez</code>。这一步必须手动做，浏览器不能替你存文件。</li>
+      <li><b>把封面另存到 <code>assets/covers/</code></b><br>
+        右侧预览图右键另存为，命名成 <code>&lt;id&gt;.png</code> 即可。不弄也行，会自动生成占位封面。</li>
+      <li><b>复制代码块，粘进 <code>data/charts.js</code></b><br>
+        塞进 <code>CHARTS</code> 数组里，注意和上一条之间要有逗号。</li>
+      <li><b>刷新首页</b><br>新作品就出现在列表和侧边栏里了。</li>
+    </ol>
+
+    <h2 class="section" id="faq">解析不出来怎么办</h2>
+    <div class="article">
+      <ul>
+        <li>如果提示「不是 zip 格式」——确认一下文件确实是 .pez（可以先把扩展名改成 .zip 用解压软件试开）。</li>
+        <li>如果曲名、曲师是空的——说明包里的元数据文件名不在常见列表里。
+          展开「查看压缩包内文件」，看看它用的什么文件，然后手动填进表单即可。</li>
+        <li>如果音符数是空的——包里没有找到可解析的 <code>chart.json</code>，手动填一下就行，不影响下载功能。</li>
+      </ul>
+      <p class="muted" style="font-size:12.5px">这个工具只是省手工，任何字段都能覆盖。它永远不会修改你的原始文件。</p>
+    </div>
+  </main>
+</div>
+
+<footer id="footer-mount" class="site-footer"></footer>
+
+<script>
+/* 数据文件每次都拿最新的：
+   GitHub Pages 会给 data/charts.js 设 Cache-Control: max-age=600（10 分钟），
+   而「检测到更新就刷新首页」要靠它 —— 加时间戳才能绕开这份缓存。
+   ⚠️ 时间戳必须**每次加载都不一样**：原来用的是「每分钟一个版本号」，
+   结果自动刷新那一刻若还没跨分钟，reload 会命中浏览器缓存（max-age=600），
+   刷了还是旧内容、而且之后不会再重试 —— 表现就是「传完谱刷新没生效」。
+   代价是每次访问都要重新下这个小文件（约 11KB），可以接受。
+   必须同步执行（后面的脚本都依赖 window.CHARTS），所以用 document.write。
+   file:// 下不能带查询参数（会找不到文件），所以按协议判断。 */
+(function () {
+  var q = location.protocol === "file:" ? "" : "?t=" + Date.now();
+  document.write('<script src="data/charts.js' + q + '"><\/script>');
+})();
+</script>
+<script src="assets/js/common.js"></script>
+<script src="vendor/jszip.min.js"></script>
+<script src="assets/js/importer.js"></script>
+</body>
+</html>

@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">   <!-- 测试页：不收录 -->
+<title>Phira 自制谱仓库 · 效果测试页</title>
+<meta name="description" content="个人自制谱面归档站，提供 .pez 谱面包下载与 B 站预览。">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="assets/css/wiki.css">
+<script>/* 在样式生效前先定好主题，避免深色模式下刷新闪白 */
+(function(){try{var t=localStorage.getItem("pez-theme");
+if(!t||t==="auto"){t=(window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").matches)?"dark":"light";}
+document.documentElement.setAttribute("data-theme",t);}catch(e){}
+/* 入场动效：这个类由 JS 加上，wiki.css 里所有「初始隐藏」的样式都挂在它作用域下。
+   于是 —— 没 JS / 脚本挂了，内容依然是可见的，不会整屏空白。 */
+document.documentElement.classList.add("motion-ready");})();</script>
+
+<script>/* ---------------------------------------------------- 光标光斑 ---------
+   卡片底色是一道跟着鼠标走的光斑（由浅变深）。这里只做一件事：
+   **尽早把鼠标在视口里的位置记下来**（window.__WB_PTR），
+   真正的坐标换算在 common.js 的 WB.glowFollow() 里 ——
+   因为光斑在每张卡片里的位置 = 鼠标位置 − 这张卡片的左上角，
+   必须等卡片渲染出来、而且要跟着滚动重算（详见那里的注释）。
+
+   ⚠️ 为什么这段要早早放在 <head>：浏览器**没有**「读取当前鼠标位置」的 API，
+      位置只能从指针事件里拿。放这里比样式表和页面渲染都早，用户一动鼠标就已经生效。
+      页面加载完但用户还没动过鼠标时，WB.glowFollow() 会先用视口正中偏上当起点。
+   下面四个事件都挂上：pointer/mouse 两套 + move/over 两种，
+   它们做的事完全一样（记位置 + 叫一次重算），而重算本身是 rAF 节流的，
+   所以重复触发没有任何代价，换来的是各种浏览器都不会漏事件。 */
+(function () {
+  var P = window.__WB_PTR = { x: 0, y: 0, seen: false };
+  function onMove(e) {
+    if (typeof e.clientX !== "number") return;
+    P.x = e.clientX; P.y = e.clientY; P.seen = true;
+    if (window.__WB_GLOW) window.__WB_GLOW();
+  }
+  window.addEventListener("pointermove", onMove, { passive: true });
+  window.addEventListener("mousemove", onMove, { passive: true });
+  window.addEventListener("pointerover", onMove, { passive: true });
+  window.addEventListener("mouseover", onMove, { passive: true });
+})();</script>
+</head>
+<body>
+
+<header id="header-mount" class="site-header"></header>
+
+<div class="layout no-rail">
+  <aside id="sidebar-mount" class="sidebar"></aside>
+
+  <main class="content">
+
+    <!-- ▼▼ 顶部横幅插槽：把 SITE.design.banner 填上图片路径就会出现，
+              建议尺寸 1600×320。留空则完全不占位。 ▼▼ -->
+    <img class="page-banner" id="banner-mount" alt="">
+
+    <div id="sample-notice" class="notice" hidden></div>
+
+    <!-- ▼▼ 极简信息条（UP 主元素已弱化，只有一行小字署名）▼▼ -->
+    <div id="space-mount" class="space-bar"></div>
+
+    <div id="list">
+      <nav id="tabs-mount" class="tabs"></nav>
+      <div id="filterbar-mount" class="filter-bar"></div>
+    </div>
+
+    <div id="list-area"></div>
+
+    <!-- 站点说明：做成低存在感的小字，不抢作品的位置 -->
+    <section class="site-blurb" id="site-blurb"></section>
+
+    <noscript>
+      <div class="notice warn">这个站点需要 JavaScript 才能列出作品，请开启后刷新。</div>
+    </noscript>
+  </main>
+</div>
+
+<footer id="footer-mount" class="site-footer"></footer>
+
+<script>
+/* 数据文件每次都拿最新的：
+   GitHub Pages 会给 data/charts.js 设 Cache-Control: max-age=600（10 分钟），
+   而「检测到更新就刷新首页」要靠它 —— 加时间戳才能绕开这份缓存。
+   ⚠️ 时间戳必须**每次加载都不一样**：原来用的是「每分钟一个版本号」，
+   结果自动刷新那一刻若还没跨分钟，reload 会命中浏览器缓存（max-age=600），
+   刷了还是旧内容、而且之后不会再重试 —— 表现就是「传完谱刷新没生效」。
+   代价是每次访问都要重新下这个小文件（约 11KB），可以接受。
+   必须同步执行（后面的脚本都依赖 window.CHARTS），所以用 document.write。
+   file:// 下不能带查询参数（会找不到文件），所以按协议判断。 */
+(function () {
+  var q = location.protocol === "file:" ? "" : "?t=" + Date.now();
+  document.write('<script src="data/charts.js' + q + '"><\/script>');
+})();
+</script>
+<script src="assets/js/common.js"></script>
+<script src="assets/js/home.js"></script>
+<script>
+/* 站点说明文案在 data/charts.js 的 SITE.intro 里改 */
+(function () {
+  var s = window.SITE || {};
+  if (s.title) document.title = s.title;
+  var el = document.getElementById("site-blurb");
+  if (el && s.intro) {
+    el.className = "site-blurb motion-reveal";     /* 滚到这里时错位浮现 */
+    el.style.setProperty("--reveal-delay", "80ms");
+    el.innerHTML =
+      '<h2>关于本站</h2>' +
+      String(s.intro).split(/\n+/).filter(Boolean)
+        .map(function (p) { return "<p>" + window.WB.esc(p) + "</p>"; }).join("") +
+      '<p><a href="about">使用说明</a> · <a href="upload">上传工具</a></p>';
+  }
+})();
+</script>
+<script>
+/* 自动刷新：检测到 data/charts.js 有更新就刷新首页（逻辑在 common.js 的 WB.autoRefresh）
+   想关掉：在 data/charts.js 的 SITE 里写 autoRefresh: false */
+(function () {
+  var s = window.SITE || {};
+  if (s.autoRefresh === false) return;
+  if (window.WB && WB.autoRefresh) WB.autoRefresh();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,291 @@
+/* ==========================================================================
+ *  ★★ 这是 **测试页 /page-test/ 专用**的数据文件 ★★
+ *
+ *  内容是「正式数据 + 5 张示例卡片（sample: true）」，只给主人拿去给朋友看效果用。
+ *  正式站点的数据在 data/charts.js（那里没有示例卡片）。
+ *
+ *  与正式数据的差别只有一处：file 指向 ../charts/…（上一层），
+ *  这样测试页不用再复制一份 2.3MB 的谱面文件。
+ * ========================================================================== */
+
+/* ============================================================================
+ *  data/charts.js  ——  全站唯一需要你手动维护的文件
+ * ==========================================================================*/
+window.SITE = {
+  title: "Phira 自制谱仓库",
+
+  /* 顶栏把站名拆成几行写 —— 每一项就是一行。
+     宽屏（>860px）会拼成一行显示（等价于 title），只有窄屏才真的分行。
+     不填就整名一行显示。
+     手机上整名一行会被截断成「Phira 自制…」，拆成两行就都能看见了。 */
+  brandLines: ["Phira 自制谱", "仓库"],
+  tagline: "个人自制谱面的归档与下载站",
+  author: "芣苢子fuyi",
+  intro:
+    "这里是 芣苢子fuyi 的个人自制谱仓库，收录自己制作的 Phira / 类 Phigros 谱面。\n" +
+    "所有谱面以 .pez 格式提供下载，可在 Phira 中直接导入游玩。\n" +
+    "同一份谱面的历史版本都能找到；想看手感的话，详情页里有内嵌的短预览，完整视频另附外链。",
+  /* 页脚文案。支持轻量 markdown：**加粗**、空行分段、单换行折行。
+     其余语法（链接等）不支持 —— 要就写成 HTML（会被 WB.rich 先转义再渲染，
+     想插真 HTML 请改 assets/js/common.js 的 WB.rich）。 */
+  footer:
+    "本站为个人非商业二次创作谱面分享，**与 Phigros, Phira, Phigrim 等游戏官方无关**。\n" +
+    "版权归原作者及原权利人，仅供社区交流，禁止商用、二次分发、冒充原创。\n" +
+    "**允许在标注出完整的曲师、谱师信息下上传屏元、手元视频，不允许录制自动游玩视频**" +
+    "（展示资源包、谱面读取游玩与录制软件的除外）。\n" +
+    "如本站无意间侵害了您的著作权，请联系我删除。\n" +
+    "邮箱：2595419272@qq.com　Agent 邮箱：muxuzi@agent.qq.com",
+  links: [
+    { text: "Phira 官网", url: "https://www.phira.com.cn/" },
+    { text: "Fuyizi's GitHub Page", url: "https://github.com/Fuyizi/phira-charts/releases" },
+    { text: "B 站主页", url: "https://space.bilibili.com/3632318046537954" }
+  ],
+
+  /* ---------------------------------------------------------------------------
+   *  设计接口 —— 留给 Illustrator 排版用的插槽
+   * ---------------------------------------------------------------------------
+   *  logo           顶栏左侧的图标。建议 48×48 透明 PNG 或 SVG。
+   *  banner         首页顶部横幅。建议 1600×320。留空则不显示横幅。
+   *  background     整站页面底纹/背景图，建议做得很淡。
+   *  cardPlaceholder 没有封面的作品用什么图占位。建议 400×400。
+   *  accent         全站强调色，比如 bilibili 粉 "#fb7299"。
+   *  cardMinWidth   卡片最小宽度，默认 "156px"。
+   *  cardThumbRatio 封面比例，默认 "1 / 1"；想做成 B 站那种横图就填 "16 / 9"。
+   *  尺寸/形状类的变量在 assets/css/wiki.css 最顶部的「设计变量」区块。
+   * -------------------------------------------------------------------------*/
+  design: {
+    logo: "",
+    banner: "",
+    background: "",
+    cardPlaceholder: "",
+    accent: "",
+    cardMinWidth: "",
+    cardThumbRatio: ""
+  },
+
+  /* ---------------------------------------------------------------------------
+   *  审核开关（多谱师改造后启用，现在先放着）
+   *  true  = 新提交的作品先存成 pending，需要你审核后才上首页
+   *  false = 提交即发布
+   *  前端已经会过滤 status !== "published" 的条目，所以现在改成 true 立刻生效。
+   * -------------------------------------------------------------------------*/
+  requireReview: false,
+
+  /* ---------------------------------------------------------------------------
+   *  首页自动刷新
+   *  true  = 首页会悄悄检查有没有新作品，有就自己刷新（默认）
+   *  false = 完全关掉，只能手动刷新
+   *  实现见 assets/js/common.js 的 WB.autoRefresh()
+   * -------------------------------------------------------------------------*/
+  autoRefresh: true
+};
+
+/* ============================================================================
+ *  作品数据 —— 一条记录 = 一个版本
+ * ----------------------------------------------------------------------------
+ *  ▍版本是怎么归组的
+ *    相同的 id（作品） + 相同的 level（难度）→ 同一份谱的不同版本。
+ *    首页每个版本线只显示最新的一版，旧版在详情页的「版本历史」里能找到。
+ *    例：「别把夏天关掉 / IN」有 v1.0 → v1.3 四条记录，首页只显示 v1.3。
+ *
+ *  ▍三个"版本"相关字段别搞混
+ *    id       作品身份，来自 info.txt 的 Path。一首歌一个，不参与排序。
+ *    version  给人看的版本号（v1.0 / v1.2 / final…），随便起。
+ *    seq      机器排序用的自增整数，越大越新。
+ *             为什么不用 version 排序？因为 "v1.10" 按字符串比会比 "v1.9" 还小。
+ *
+ *  ▍字段速查
+ *    id*        作品标识，决定下载路径 charts/<id>/<level>-<version>.pez
+ *    level*     难度名（AT/IN/HD/EZ/FM），不含数字
+ *    difficulty 难度数值，字符串，支持 "15.4" "16+" 这种写法
+ *    version*   版本号
+ *    seq*       排序号
+ *    title*     曲名
+ *    titleZh    中文名（可选，有就优先显示）
+ *    artist     曲师
+ *    charterName 谱师名义，**单个字符串**（来自 info.txt 的 Charter:）。
+ *                这是"挂谁的名"，可能是个团体名，所以**不要按逗号拆**。
+ *    charters    实际谱师，**数组**，真正动手的人。合作谱可以多人。
+ *                包里没有这个信息，一般在导入工具里手填；留空则只显示名义。
+ *    owner       上传者 / 负责人（多账号改造后用，权限只看它，不看上面两个）
+ *    cover      封面路径，留空自动用 assets/covers/<id>.*，再没有就画占位图
+ *    file       下载路径，留空默认 charts/<id>/<level>-<version>.pez
+ *    size       文件大小文本
+ *    duration   时长，**单位秒（数字）**，页面显示时才转成分秒
+ *    bpm        **数组**，变 BPM 就把所有 BPM 值都列进去
+ *    notes      音符数
+ *    editTime   编辑净用时，单位秒
+ *    date       发布日期（导入时取自 info.txt 的 LastEditTime）
+ *
+ *    ▍两种预览，别搞混（详情页的用法完全不同）
+ *    shortPreview  短预览 → 详情页里**内嵌**的播放器，一小段用来快速看手感
+ *                  { bvid: "BVxxx", start: 0, end: 30, note: "片段 00:35–01:10" }
+ *                  start 是起始秒数（可省略）；没有短预览就留空整个对象 {},
+ *                  详情页会改成"去 B 站看完整视频"的提示。
+ *    bilibili      长预览 → 完整视频，**只做成外链按钮**，不占版面
+ *                  { bvid: "BVxxx", url: "", note: "" }
+ *
+ *    tags       标签数组
+ *    license    转载许可
+ *    desc       简介，\n\n 分段
+ *    changelog  [{ v, date, text }]，写"这一版改了什么"，没写就显示 —
+ *
+ *  ⚠️ 改了谱面信息（调难度、写更新日志）时**不要重传 .pez**，只改这里。
+ *     否则 Git 历史里会堆满好几 MB 的旧文件。
+ * ==========================================================================*/
+window.CHARTS = [
+  {
+    owner: "fuyizi",
+    id: "8903952875279864",
+    level: "IN",
+    difficulty: "12+",
+    version: "v1.1",
+    seq: 1,
+    title: "窗",
+    titleZh: "窗",
+    artist: "张卡斯 feat.洛天依",
+    charterName: "芣",
+    charters: ["芣苢子fuyi"],
+    cover: "assets/covers/8903952875279864.jpg",
+    file: "../charts/8903952875279864/IN-v1.1.pez",
+    size: "2.3 MB",
+    duration: 148.12,
+    bpm: [190],
+    notes: 520,
+    notesByType: { tap: 206, hold: 94, flick: 59, drag: 161 },
+    sha256: "435ea64d22aa637f801894dd7fc4807b8d12729dacafd87fc41d2eb68ed50c92",
+    editTime: 10396.187,
+    date: "2026-10-14",
+    shortPreview: { bvid: "BV1BDpB6wEVW" },
+    bilibili: {
+      url: "https://www.bilibili.com/video/BV19cHd6vEtM/",
+      bvid: "BV19cHd6vEtM",
+    },
+    license: "未经作者允许禁止转载，禁止商业用途使用"
+  },
+
+  /* ==========================================================================
+     ⚠️ 以下是**本地测试用的示例卡片**，不是真作品（主人要求「加几个测试卡片」）。
+        标记 sample: true 之后，首页顶部会自动出现「当前展示的是示例数据」提示条。
+        它们的 file 指的是「窗 v1.1」那个真实文件（点下载不会 404），
+        但曲名 / 难度 / BPM 这些都是编的，只是用来看排版与光斑动效。
+     ➜ **正式发布前把这一段整块删掉**（从本行上方那条分隔线到下面那段注释之间）。
+     ========================================================================== */
+  {
+    owner: "demo",
+    sample: true,
+    id: "9000000000000001",
+    level: "IN",
+    difficulty: "14",
+    version: "v1.0",
+    seq: 2,
+    title: "示例卡片 A",
+    titleZh: "示例卡片 A",
+    artist: "测试曲师",
+    charterName: "测试谱师",
+    charters: ["测试谱师"],
+    cover: "assets/covers/8903952875279864.jpg",
+    file: "../charts/8903952875279864/IN-v1.1.pez",
+    size: "2.3 MB",
+    duration: 132,
+    bpm: [174],
+    notes: 812,
+    notesByType: { tap: 480, hold: 120, flick: 88, drag: 124 },
+    editTime: 3600,
+    date: "2026-10-17",
+    license: "示例数据，仅用于本地预览"
+  },
+  {
+    owner: "demo",
+    sample: true,
+    id: "9000000000000002",
+    level: "IN",
+    difficulty: "15.6",
+    version: "v2.1",
+    seq: 3,
+    title: "示例卡片 B（变 BPM、无封面）",
+    titleZh: "示例卡片 B（变 BPM、无封面）",
+    artist: "Another Composer",
+    charterName: "芣苢子fuyi",
+    charters: ["芣苢子fuyi", "半秋Autino"],
+    file: "../charts/8903952875279864/IN-v1.1.pez",
+    size: "3.1 MB",
+    duration: 199.079,
+    bpm: [188, 212, 300],
+    notes: 1444,
+    notesByType: { tap: 824, hold: 173, flick: 165, drag: 282 },
+    editTime: 18720,
+    date: "2026-10-16",
+    license: "示例数据，仅用于本地预览"
+  },
+  {
+    owner: "demo",
+    sample: true,
+    id: "9000000000000003",
+    level: "AT",
+    difficulty: "16+",
+    version: "v1.0",
+    seq: 4,
+    title: "示例卡片 C",
+    titleZh: "示例卡片 C",
+    artist: "テスト",
+    charterName: "测试谱师",
+    charters: ["测试谱师"],
+    cover: "assets/covers/8903952875279864.jpg",
+    file: "../charts/8903952875279864/IN-v1.1.pez",
+    size: "1.8 MB",
+    duration: 96,
+    bpm: [150],
+    notes: 640,
+    notesByType: { tap: 400, hold: 80, flick: 60, drag: 100 },
+    editTime: 2400,
+    date: "2026-10-15",
+    license: "示例数据，仅用于本地预览"
+  },
+  {
+    owner: "demo",
+    sample: true,
+    id: "9000000000000004",
+    level: "HD",
+    difficulty: "8",
+    version: "v1.0",
+    seq: 5,
+    title: "示例卡片 D：专门用一条比较长的曲名来看省略号效果",
+    titleZh: "示例卡片 D：专门用一条比较长的曲名来看省略号效果",
+    artist: "Long Composer Name feat. Someone",
+    charterName: "测试谱师",
+    charters: ["测试谱师"],
+    file: "../charts/8903952875279864/IN-v1.1.pez",
+    size: "0.9 MB",
+    duration: 61,
+    bpm: [120],
+    notes: 210,
+    notesByType: { tap: 130, hold: 30, flick: 20, drag: 30 },
+    editTime: 900,
+    date: "2026-10-14",
+    license: "示例数据，仅用于本地预览"
+  },
+  {
+    owner: "demo",
+    sample: true,
+    id: "9000000000000005",
+    version: "v1.0",
+    seq: 6,
+    title: "示例卡片 E（难度留空）",
+    titleZh: "示例卡片 E（难度留空）",
+    artist: "测试曲师",
+    charterName: "测试谱师",
+    charters: ["测试谱师"],
+    cover: "assets/covers/8903952875279864.jpg",
+    file: "../charts/8903952875279864/IN-v1.1.pez",
+    size: "2.0 MB",
+    duration: 120,
+    bpm: [200],
+    notes: 500,
+    notesByType: { tap: 300, hold: 70, flick: 50, drag: 80 },
+    editTime: 1800,
+    date: "2026-10-13",
+    license: "示例数据，仅用于本地预览"
+  }
+  /* ← 示例卡片到这一行为止 */
+];
