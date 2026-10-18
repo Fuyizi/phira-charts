@@ -527,6 +527,10 @@
       duration: duration,
       bpm: bpms,
       notes: rec.chart ? rec.chart.total : "",
+      /* 判定线条数（chart.json 的 judgeLineList 长度）—— 详情页「判定线条数」一行靠它。
+         没解析出谱面数据就留 null，别造 0。
+         ⚠️ 这个字段在 snippetOf() 里**也必须写一份**，否则表单里算得再对、存进仓库的也没有。 */
+      judgeLines: rec.chart && typeof rec.chart.lines === "number" ? rec.chart.lines : null,
       /* 各类型音符的分项计数（RPE 编码：1=Tap 2=Hold 3=Flick 4=Drag）——
          详情页要用它展示「音符构成」。没解析出谱面数据就留 null，别造 0。 */
       notesByType: rec.chart && rec.chart.counts ? {
@@ -585,6 +589,8 @@
     raw("duration", d.duration);
     if (d.bpm && d.bpm.length) lines.push("    bpm: [" + d.bpm.join(", ") + "],");
     raw("notes", d.notes);
+    /* 判定线条数 —— 与上面「表单对象」那处**必须一起改**（两份字段清单，别只改一份）。 */
+    raw("judgeLines", d.judgeLines);
     /* ⚠️ 音符构成（Tap/Hold/Flick/Drag 分项）—— 详情页的「音符构成」一行靠它。
        这个字段以前只加进了表单对象、**忘了往片段里写**，所以上传上去的条目全都缺它，
        详情页那一行永远是空的。别再把这条漏掉。 */

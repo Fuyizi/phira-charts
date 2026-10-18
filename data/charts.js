@@ -142,6 +142,7 @@ window.CHARTS = [
     duration: 148.12,
     bpm: [190],
     notes: 520,
+    judgeLines: 12,
     notesByType: { tap: 206, hold: 94, flick: 59, drag: 161 },
     sha256: "435ea64d22aa637f801894dd7fc4807b8d12729dacafd87fc41d2eb68ed50c92",
     editTime: 10396.187,

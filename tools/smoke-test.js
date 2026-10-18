@@ -324,6 +324,8 @@ async function waitParsed(d, want) {
     ok(/音符构成/.test(ib), "信息框有「音符构成」一行");
     ok(/Tap 824/.test(ib) && /Hold 173/.test(ib) && /Flick 165/.test(ib) && /Drag 282/.test(ib),
       "音符构成列出四种类型的个数（v1.3 应为 824 / 173 / 165 / 282）");
+    ok(/判定线条数\s*18/.test(ib),
+      "信息框有「判定线条数」，取 judgeLineList 的长度（夹具里 v1.3 为 18）");
 
     const dl = d.querySelector(".download-panel a[download]");
     ok(!!dl && /charts\/2707124491408302\/IN-v1\.3\.pez$/.test(dl.getAttribute("href")),
@@ -570,6 +572,9 @@ async function waitParsed(d, want) {
     ok(!!nbt && (+nbt[1] + +nbt[2] + +nbt[3] + +nbt[4]) === 1444,
       "分项之和 = 音符总数 1444（不会自己造数）", nbt ? nbt[0] : "片段里没有");
     ok(/notesByType: \{ tap:/.test(sn), "notesByType 是对象字面量写法（不是字符串）");
+    /* 判定线条数：同样是「两份字段清单」，漏一处就存不进仓库 */
+    ok(/judgeLines: \d+/.test(sn), "代码片段含 judgeLines（判定线条数）",
+      sn.match(/judgeLines: \d+/));
 
     const ed = d.getElementById("editor-mount").textContent;
     ok(/已有 4 个版本/.test(ed), "界面提示这是已有作品的版本线（v1.0~v1.3）");

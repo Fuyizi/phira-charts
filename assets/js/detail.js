@@ -80,6 +80,7 @@
       ["时长", WB.fmtDuration(c.duration)],
       ["音符数", c.notes ? Number(c.notes).toLocaleString("en-US") : ""],
       ["音符构成", WB.notesByTypeText(c)],
+      ["判定线条数", c.judgeLines ? Number(c.judgeLines).toLocaleString("en-US") : ""],
       ["编辑净用时", WB.fmtEditTime(c.editTime)],
       ["文件大小", c.size],
       ["格式", ".pez（Phira 谱面包）"],
