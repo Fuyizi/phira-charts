@@ -1747,7 +1747,7 @@ pre.code .copy-btn {
   font-weight: 400;
   line-height: 1.6;
   color: var(--text-mute);
-  text-align: center;
+  text-align: left;              /* 小字左对齐（主人 2026-10-22 指定） */
 }
 .leave-actions {
   display: flex;
@@ -1755,7 +1755,12 @@ pre.code .copy-btn {
   gap: 8px;
   margin-top: 18px;
 }
-.leave-actions .btn { min-width: 92px; }
+/* .btn 是 inline-flex，不写 justify-content 时文字会贴在左边 —— 
+   配合下面的 min-width 就成了「字不在按钮中间」，必须补这一行 */
+.leave-actions .btn {
+  min-width: 92px;
+  justify-content: center;
+}
 
 /* 弹窗入场：遮罩淡入、面板微微上浮放大。故意只写 from 到 to 的
    一次性动画，不挂 infinite；减少动态效果时由下面那条媒体查询关掉。 */

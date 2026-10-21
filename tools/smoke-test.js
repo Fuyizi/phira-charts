@@ -1499,8 +1499,9 @@ async function waitParsed(d, want) {
     ok(/WB\.leaveGuard\.mark\(false\)/.test(upSrc), "上传成功后清掉标记");
     const comSrc = fs.readFileSync(
       path.join(__dirname, "..", "assets", "js", "common.js"), "utf8");
-    ok(/var TIPS = \[/.test(comSrc) && /Math\.floor\(Math\.random\(\) \* TIPS\.length\)/.test(comSrc),
-      "离开确认的文案是多条随机挑（common.js 的 TIPS）");
+    ok(/var TIPS = \[/.test(comSrc) && /Math\.floor\(Math\.random\(\)/.test(comSrc) &&
+      /lastPick/.test(comSrc),
+      "离开确认的文案是多条随机挑，且不会连着两次一样（TIPS + lastPick）");
     ok(comSrc.indexOf("不能就这么走开哇") > -1 && comSrc.indexOf("谱师大大") > -1 &&
       comSrc.indexOf("渺小而可爱的人类") > -1, "三条随机文案都在");
     ok((comSrc.match(/\\n\\n/g) || []).length >= 2,

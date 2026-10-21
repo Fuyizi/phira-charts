@@ -1063,8 +1063,23 @@
       "谱师大大！！（超大声）\n你…你怎么就想走哇，你还没有保存呐！！",
       "渺小而可爱的人类，\n我该如何提醒你，\n\n你离开前还没有保存或上传呢？"
     ];
+    /* 提示语随机挑一条，且**不会连着两次挑到同一条**
+       （只用 Math.random() 时，偶尔连出同一条会让人觉得"根本没随机"，
+        2026-10-22 主人就报过「只会随机到 tip3」——实测是概率错觉，
+        所以这里干脆把上一条排除掉，肉眼上就随机得起来了）。 */
+    var lastPick = -1;
     function pickTip() {
-      return TIPS[Math.floor(Math.random() * TIPS.length)];
+      var n = TIPS.length;
+      if (n < 2) return TIPS[0];
+      var idx;
+      if (lastPick < 0) {
+        idx = Math.floor(Math.random() * n);
+      } else {
+        idx = Math.floor(Math.random() * (n - 1));   /* 跳过上次那条 */
+        if (idx >= lastPick) idx = idx + 1;
+      }
+      lastPick = idx;
+      return TIPS[idx];
     }
     var TIP = TIPS[0];              /* 兼容旧调用；beforeunload 只用它 */
     var api = { onLeave: null };
