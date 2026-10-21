@@ -877,6 +877,10 @@
 
   /* ============================================================ 启动 == */
   function boot() {
+    /* ⚠️ 被当成「解析库」加载时（比如创作中心重传 .pez）会走到这里，
+       但页面上没有 #dropzone —— 那就**一律不碰页面**：
+       否则它会改写 document.title、重渲染导航，还会因为拿不到拖拽区而报错。 */
+    if (!document.getElementById("dropzone")) return;
     /* upload.html 与 import.html 共用这个文件，按路径决定导航高亮哪一项 */
     var pageKey = /\/upload(\?|$)/.test(window.location.pathname) ? "upload" : "import";
     WB.renderHeader({ current: pageKey, search: false });
@@ -950,6 +954,11 @@
       handle(e.dataTransfer.files);
     });
   }
+
+  /* ---------------------------------------------- 对外暴露解析能力 -----
+     创作中心要「编辑条目时拖入新版本 .pez」，需要的就是 parsePez（解包 + 读 info.txt
+     + 统计音符/判定线 + 算 sha256）。这里只放解析相关，**不放任何 DOM 操作**。 */
+  window.INS = { parsePez: parsePez, buildDraft: buildDraft };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

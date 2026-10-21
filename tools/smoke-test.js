@@ -1420,6 +1420,80 @@ async function waitParsed(d, want) {
     dom.window.close();
   }
 
+  /* ==================================== 创作中心：全字段编辑 + 离开确认 == */
+  console.log("\n[20] 创作中心：编辑表单覆盖全部字段 + 未保存就离开要确认");
+  {
+    /* ?sc-demo=1 是「不登录也能渲染编辑表单」的预览模式，条目是假数据、保存会被拦。
+       借它把表单结构与「离开确认」完整跑一遍。 */
+    const { dom, errs } = await load("studio?sc-demo=1");
+    const w = dom.window, d = w.document;
+
+    const IDS = ["f-title", "f-titleZh", "f-artist", "f-charterName", "f-charters",
+      "f-level", "f-difficulty", "f-version", "f-date", "f-license",
+      "f-duration", "f-bpm", "f-notes", "f-judgeLines", "f-editTime", "f-size",
+      "f-notesByType__tap", "f-notesByType__hold", "f-notesByType__flick", "f-notesByType__drag",
+      "f-shortPreview__bvid", "f-shortPreview__start", "f-shortPreview__note",
+      "f-bilibili__url", "f-bilibili__bvid", "f-bilibili__note",
+      "f-cover", "f-file"];
+    const miss = IDS.filter((id) => !d.getElementById(id));
+    ok(miss.length === 0, "编辑表单含全部 " + IDS.length + " 个字段", "缺：" + miss.join(","));
+
+    /* 夹具第一条是「时」 */
+    const v = (id) => { const e = d.getElementById(id); return e ? String(e.value) : ""; };
+    ok(v("f-title") === "时", "曲名填对了", v("f-title"));
+    ok(v("f-bpm") === "130", "BPM 数组按逗号展开进输入框", v("f-bpm"));
+    ok(!!d.querySelector("#edit-mount .sc-form"), "表单已渲染");
+    ok(!!d.getElementById("sc-dz"), "有重传 .pez 的拖放区");
+    ok(!!d.getElementById("sc-save"), "有保存按钮");
+
+    /* 源码层：那几段关键逻辑得在 */
+    const studioSrc = fs.readFileSync(
+      path.join(__dirname, "..", "assets", "js", "studio.js"), "utf8");
+    ok(/function keySpans/.test(studioSrc) && /function scanValueEnd/.test(studioSrc),
+      "用「值区间扫描」改字段（能处理对象 / 数组 / 多行，不是单行 regex）");
+    ok(/function appendEntry/.test(studioSrc) && /function entryText/.test(studioSrc),
+      "能把新版本条目追加进 CHARTS");
+    ok(/function setDerived/.test(studioSrc), "替换模式会刷新派生字段");
+    ok(/window\.INS\.parsePez/.test(studioSrc) || /INS\.parsePez/.test(studioSrc),
+      "重传复用上传页那个解析器（INS.parsePez）");
+    ok(studioSrc.indexOf("sc-mode-replace") > -1 && studioSrc.indexOf("sc-mode-new") > -1,
+      "两种重传模式（新增版本 / 替换当前版本）");
+
+    /* 离开确认：先改一个字段 → 变脏 → 点站内链接 → 弹窗 */
+    ok(typeof w.WB.leaveGuard.mark === "function" && typeof w.WB.leaveGuard.isDirty === "function",
+      "暴露了 WB.leaveGuard（mark / isDirty）");
+    const t = d.getElementById("f-shortPreview__bvid");
+    t.value = "BV1TESTTEST";
+    t.dispatchEvent(new w.Event("input", { bubbles: true }));
+    ok(w.WB.leaveGuard.isDirty(), "改过字段后标记为「有未保存内容」");
+
+    const link = d.querySelector('a[href="about"]') || d.querySelector(".header-nav a[href]");
+    ok(!!link, "页面里有可点的站内链接");
+    if (link) link.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true }));
+    const modal = d.getElementById("leave-ask");
+    ok(!!modal, "点站内链接时弹出了确认框");
+    ok(!!modal && /还有内容没有保存，确定要退出吗/.test(modal.textContent),
+      "确认框文案正确", modal ? modal.textContent.slice(0, 40) : "");
+    ok(!!modal && !!modal.querySelector('[data-leave="stay"]') &&
+      !!modal.querySelector('[data-leave="go"]'), "确认框有「继续编辑 / 确认离开」两个按钮");
+    ok(!!d.querySelector("#edit-mount .sc-form"), "弹窗期间没有跳走（页面还在）");
+    if (modal) modal.querySelector('[data-leave="stay"]').click();
+    ok(!d.getElementById("leave-ask"), "点「继续编辑」后弹窗关掉");
+
+    /* 上传页也用同一套「未保存就离开」保护 */
+    const upSrc = fs.readFileSync(
+      path.join(__dirname, "..", "assets", "js", "uploader.js"), "utf8");
+    ok(/WB\.leaveGuard\.mark\(true\)/.test(upSrc), "上传页拖进文件后标记为未保存");
+    ok(/WB\.leaveGuard\.mark\(false\)/.test(upSrc), "上传成功后清掉标记");
+    const comSrc = fs.readFileSync(
+      path.join(__dirname, "..", "assets", "js", "common.js"), "utf8");
+    ok(comSrc.indexOf("还有内容没有保存，确定要退出吗") > -1, "离开确认的文案在 common.js 里");
+    ok(/beforeunload/.test(comSrc), "关标签 / 刷新时也会拦（beforeunload）");
+
+    ok(realErrors(errs).length === 0, "创作中心无脚本运行时错误", realErrors(errs).join(" | "));
+    dom.window.close();
+  }
+
   console.log("\n" + "=".repeat(58));
   console.log("通过 " + pass + " 项，失败 " + fail + " 项");
   if (problems.length) {

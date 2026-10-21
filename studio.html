@@ -47,6 +47,10 @@ document.documentElement.setAttribute("data-theme",t);}catch(e){}})();</script>
 })();
 </script>
 <script src="assets/js/common.js"></script>
+<!-- 重传 .pez 要解包 + 读 info.txt + 统计音符/判定线，复用上传页那个解析器。
+     importer.js 在找不到 #dropzone 时会自动「只当库用」、不碰页面（见它的 boot()）。 -->
+<script src="vendor/jszip.min.js"></script>
+<script src="assets/js/importer.js"></script>
 <script src="assets/js/studio.js"></script>
 </body>
 </html>

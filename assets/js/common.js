@@ -1036,6 +1036,99 @@
     return out.join("");
   };
 
+  /* ------------------------------------------- 离开页面的二次确认 --------
+     表单里有没保存的东西，用户想走（点站内链接 / 关标签 / 刷新）时先问一句。
+     两个入口，能力不一样，都是浏览器规定的：
+       · 站内链接点击 —— 可以弹**自己的**弹窗，文案就是我们要的
+         「还有内容没有保存，确定要退出吗？」
+       · beforeunload（关标签 / 刷新 / 关浏览器）—— 浏览器**只允许**它弹
+         自己那套通用文案（"系统可能不会保存您所做的更改"），我们写的字多半不显示。
+         这是安全限制，改不了，但至少能拦住误操作。
+
+     用法（两个页面都用它，别各写一套）：
+       WB.leaveGuard.mark(true)     有未保存内容了
+       WB.leaveGuard.mark(false)    保存完 / 清空了
+       WB.leaveGuard.confirm({ href })        弹窗，确认后跳地址
+       WB.leaveGuard.confirm({ onYes: fn })   弹窗，确认后执行回调（比如关掉表单）
+       WB.leaveGuard.onLeave = fn   可选：真的离开之前做点事 */
+  WB.leaveGuard = (function () {
+    var dirty = false;
+    var TIP = "还有内容没有保存，确定要退出吗？";
+    var api = { onLeave: null };
+
+    function close(wrap) {
+      if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    }
+
+    /* 自绘弹窗。target 可以是 { href } 或 { onYes } */
+    function confirm(target, tipOverride) {
+      target = target || {};
+      var box = document.getElementById("leave-ask");
+      close(box);
+
+      var wrap = document.createElement("div");
+      wrap.id = "leave-ask";
+      wrap.className = "leave-mask";
+      wrap.innerHTML =
+        '<div class="leave-box" role="dialog" aria-modal="true" aria-labelledby="leave-tip">' +
+          '<p class="leave-tip" id="leave-tip">' + WB.esc(tipOverride || TIP) + "</p>" +
+          '<p class="leave-sub">离开后这一页填的东西会丢掉。</p>' +
+          '<div class="leave-actions">' +
+            '<button type="button" class="btn primary" data-leave="stay">继续编辑</button>' +
+            '<button type="button" class="btn ghost" data-leave="go">确认离开</button>' +
+          "</div>" +
+        "</div>";
+      document.body.appendChild(wrap);
+
+      function stay() { close(wrap); }
+      function go() {
+        dirty = false;
+        if (typeof api.onLeave === "function") { try { api.onLeave(); } catch (e) {} }
+        close(wrap);
+        if (target.href) location.href = target.href;
+        else if (typeof target.onYes === "function") target.onYes();
+      }
+
+      wrap.querySelector('[data-leave="stay"]').addEventListener("click", stay);
+      wrap.querySelector('[data-leave="go"]').addEventListener("click", go);
+      wrap.addEventListener("click", function (e) { if (e.target === wrap) stay(); });
+      document.addEventListener("keydown", function esc(e) {
+        if (e.key === "Escape") { stay(); document.removeEventListener("keydown", esc); }
+      });
+      var first = wrap.querySelector('[data-leave="stay"]');
+      if (first && first.focus) first.focus();
+      return wrap;
+    }
+
+    /* 站内链接：捕获阶段拦下来，先问 */
+    document.addEventListener("click", function (e) {
+      if (!dirty) return;
+      var a = e.target && e.target.closest ? e.target.closest("a[href]") : null;
+      if (!a) return;
+      var href = a.getAttribute("href") || "";
+      if (!href || href.charAt(0) === "#") return;          /* 页内锚点不算离开 */
+      if (a.hasAttribute("download")) return;
+      if (/^(mailto:|tel:|javascript:)/i.test(href)) return;
+      if (a.target && a.target !== "_self") return;          /* 新窗口不算离开 */
+      e.preventDefault();
+      confirm({ href: a.href });
+    }, true);
+
+    /* 关标签 / 刷新 / 关浏览器 */
+    window.addEventListener("beforeunload", function (e) {
+      if (!dirty) return;
+      e.preventDefault();
+      e.returnValue = TIP;      /* 现代浏览器不显示这段字，但不设就不拦 */
+      return TIP;
+    });
+
+    api.mark = function (v) { dirty = !!v; return dirty; };
+    api.isDirty = function () { return dirty; };
+    api.confirm = confirm;
+    api.TIP = TIP;
+    return api;
+  })();
+
   WB.renderFooter = function () {
     var site = WB.site();
     var mount = document.getElementById("footer-mount");

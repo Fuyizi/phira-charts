@@ -1649,7 +1649,9 @@ pre.code .copy-btn {
 }
 .sc-pill.public { color: var(--text-sub); }
 .sc-pill.private { color: var(--accent, var(--link)); border-color: currentColor; }
-#edit-mount table.kv input {
+#edit-mount table.kv input,
+#edit-mount table.kv select,
+#edit-mount table.kv textarea {
   width: 100%;
   min-height: 36px;
   padding: 6px 10px;
@@ -1659,6 +1661,84 @@ pre.code .copy-btn {
   color: inherit;
   font: inherit;
 }
+#edit-mount table.kv select { cursor: pointer; }
+#edit-mount table.kv textarea { min-height: 82px; resize: vertical; line-height: 1.6; }
+
+/* ---- 创作中心：编辑表单的分组小标题 / 说明文字 ---- */
+.sc-sub {
+  margin: 20px 0 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-sub);
+  border-left: 3px solid var(--accent, var(--link));
+  padding-left: 8px;
+}
+.sc-form th { width: 132px; }
+.sc-hint {
+  margin-top: 4px;
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--text-mute);
+}
+/* 重传 .pez 的拖放区：比上传页那个小一圈，塞在表单里不占地 */
+.sc-dz {
+  padding: 22px 16px;
+  gap: 6px;
+  margin-top: 4px;
+}
+.sc-dz svg { width: 26px; height: 26px; }
+.sc-dz .dz-title { font-size: 13.5px; font-weight: 600; }
+.sc-dz .dz-sub { font-size: 12px; }
+.sc-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.sc-modes label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; cursor: pointer; }
+.sc-modes input[type="radio"], .sc-modes input[type="checkbox"] { margin: 0; }
+.sc-ver {
+  width: 76px;
+  padding: 3px 7px;
+  font: inherit;
+  font-size: 12.5px;
+  color: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius);
+}
+
+/* ---- 离开页面的二次确认弹窗 ---- */
+.leave-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, .42);
+  backdrop-filter: blur(2px);
+}
+.leave-box {
+  width: min(420px, 100%);
+  padding: 20px 22px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  box-shadow: 0 18px 48px -12px rgba(0, 0, 0, .45);
+}
+.leave-tip {
+  margin: 0 0 6px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.55;
+}
+.leave-sub { margin: 0 0 16px; font-size: 12.5px; color: var(--text-mute); }
+.leave-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.leave-actions .btn { min-width: 92px; }
 @media (max-width: 860px) {
   #list-mount table.wikitable { font-size: 12.5px; }
   #list-mount table.wikitable td.actions { display: flex; flex-wrap: wrap; gap: 6px; }

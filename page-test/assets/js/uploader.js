@@ -527,6 +527,8 @@
         log(CFG.pages + "chart?id=" + encodeURIComponent(job.id) + "&lv=" +
           encodeURIComponent(val("f-level")), "ok");
         log("提示：本地这份 data/charts.js 不会自动变，建议稍后 git pull 同步一下。");
+        /* 活儿交出去了，离开就不用再问了 */
+        if (WB.leaveGuard) WB.leaveGuard.mark(false);
       }
     }).catch(function (e) {
       log("✗ 失败：" + (e && e.message ? e.message : e), "err");
@@ -544,7 +546,12 @@
   function grabFiles(list) {
     if (!list || !list.length) return;
     for (var i = 0; i < list.length; i++) {
-      if (/\.(pez|zip)$/i.test(list[i].name || "")) { pendingFile = list[i]; return; }
+      if (/\.(pez|zip)$/i.test(list[i].name || "")) {
+        pendingFile = list[i];
+        /* 拖进来了就说明「有活儿还没交出去」—— 这时关页面 / 点站内链接要问一句 */
+        if (WB.leaveGuard) WB.leaveGuard.mark(true);
+        return;
+      }
     }
   }
 
@@ -649,6 +656,12 @@
     }, true);
     var fi = $("file-input");
     if (fi) fi.addEventListener("change", function () { grabFiles(fi.files); });
+
+    /* 解析出来的表单（f-* 那些框）一改，也算「有没保存的东西」 */
+    document.addEventListener("input", function (e) {
+      var id = (e.target && e.target.id) || "";
+      if (/^f-/.test(id) && WB.leaveGuard) WB.leaveGuard.mark(true);
+    }, true);
   }
 
   if (document.readyState === "loading") {
