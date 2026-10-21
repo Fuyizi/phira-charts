@@ -1054,12 +1054,14 @@
   WB.leaveGuard = (function () {
     var dirty = false;
     /* 提示语随机挑一条，别每次都一样。
-       ⚠️ 每句里的 \n 就是主人原文的换行位置，渲染时会变成 <br> ——
-       别再自作主张把它们合成一行（2026-10-22 被说过一次）。 */
+       ⚠️ 排版约定（主人 2026-10-22 指定）：
+         · 单个 \n  = 大字区里的换行（原文怎么写就怎么断）
+         · \n\n     = 「空一行」，它后面那段变**小字**（收尾那句）
+       别再自作主张把它们合并成一行（被说过一次）。 */
     var TIPS = [
-      "喂喂，人类——你还没保存或者上传呢，\n不能就这么走开哇！！",
-      "谱师大大！！（超大声）\n你…你怎么就想走哇，你还没有保存呐！！",
-      "渺小而可爱的人类，我该如何提醒你，\n你离开前还没有保存或上传呢？"
+      "喂喂，人类——\n你还没保存或者上传呢，\n\n不能就这么走开哇！！",
+      "谱师大大！！（超大声）\n你…你怎么就想走哇，\n\n你还没有保存呐！！",
+      "渺小而可爱的人类，我该如何提醒你，\n\n你离开前还没有保存或上传呢？"
     ];
     function pickTip() {
       return TIPS[Math.floor(Math.random() * TIPS.length)];
@@ -1081,13 +1083,14 @@
       wrap.id = "leave-ask";
       wrap.className = "leave-mask";
       var tip = tipOverride || pickTip();
+      /* \n\n 切两段：前面是大字（内部单个 \n 再变 <br>），后面是小字收尾 */
+      var halves = tip.split("\n\n");
+      var big = WB.esc(halves[0]).replace(/\n/g, "<br>");
+      var small = halves.length > 1 ? WB.esc(halves[1]).replace(/\n/g, "<br>") : "";
       wrap.innerHTML =
         '<div class="leave-box" role="dialog" aria-modal="true" aria-labelledby="leave-tip">' +
-          /* 先整体转义，再把换行变成 <br>（顺序不能反） */
-          '<p class="leave-tip" id="leave-tip">' +
-            WB.esc(tip).replace(/\n/g, "<br>") +
-          "</p>" +
-          '<p class="leave-sub">离开后这一页填的东西会丢掉。</p>' +
+          '<p class="leave-tip" id="leave-tip">' + big + "</p>" +
+          (small ? '<p class="leave-tip-sub">' + small + "</p>" : "") +
           '<div class="leave-actions">' +
             '<button type="button" class="btn ghost" data-leave="go">离开</button>' +
             '<button type="button" class="btn primary" data-leave="stay">取消</button>' +

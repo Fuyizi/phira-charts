@@ -1479,8 +1479,8 @@ async function waitParsed(d, want) {
     ok(!!modal && /^取消$/.test(modal.querySelector('[data-leave="stay"]').textContent.trim()) &&
       /^离开$/.test(modal.querySelector('[data-leave="go"]').textContent.trim()),
       "按钮文案是「离开 / 取消」");
-    ok(!!modal && /<br>/i.test(modal.querySelector("#leave-tip").innerHTML),
-      "提示语按原文换行（TIPS 里的 \\n 渲染成 <br>）");
+    ok(!!modal && !!modal.querySelector(".leave-tip-sub"),
+      "排版分两段：大字主句 + 空一行后的小字收尾（.leave-tip-sub）");
     ok(!!d.querySelector("#edit-mount .sc-form"), "弹窗期间没有跳走（页面还在）");
     if (modal) modal.querySelector('[data-leave="stay"]').click();
     ok(!d.getElementById("leave-ask"), "点「取消」后弹窗关掉");
@@ -1496,6 +1496,8 @@ async function waitParsed(d, want) {
       "离开确认的文案是多条随机挑（common.js 的 TIPS）");
     ok(comSrc.indexOf("不能就这么走开哇") > -1 && comSrc.indexOf("谱师大大") > -1 &&
       comSrc.indexOf("渺小而可爱的人类") > -1, "三条随机文案都在");
+    ok((comSrc.match(/\\n\\n/g) || []).length >= 3,
+      "三条提示语都写了「空一行」（\\n\\n 分隔大字与小字）");
     ok(/beforeunload/.test(comSrc), "关标签 / 刷新时也会拦（beforeunload）");
 
     ok(realErrors(errs).length === 0, "创作中心无脚本运行时错误", realErrors(errs).join(" | "));
