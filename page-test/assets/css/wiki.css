@@ -1733,13 +1733,14 @@ pre.code .copy-btn {
   animation: leave-pop var(--motion-medium) var(--motion-ease) both;
 }
 /* 文案排版（主人 2026-10-22 指定）：
-   大字主句（可多行）→ 空一行 → 小字收尾那句。**文字居中**，按钮靠右。 */
+   大字主句（可多行）→ 空一行 → 小字收尾那句。
+   **大字和小字都左对齐**，按钮靠右 —— 别再把文字改成居中。 */
 .leave-tip {
   margin: 0;
   font-size: 17px;
   font-weight: 600;
   line-height: 1.55;
-  text-align: center;
+  text-align: left;
 }
 .leave-tip-sub {
   margin: 14px 0 0;              /* 这个 14px 就是「空一行」 */
