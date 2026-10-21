@@ -177,7 +177,9 @@ window.CHARTS = [
     sha256: "35f0d6b991c6e31218167513338a7657865f6874ea322afda4ad74d97eca7ffb",
     editTime: 67421.182,
     date: "2026-09-12",
-    shortPreview: { bvid: "BV1SRn66JErG" },
+    shortPreview: {
+      bvid: "BV1SRn66JEUf"
+    },
     bilibili: {
       url: "https://www.bilibili.com/video/BV19geK6bEiv/",
       bvid: "BV19geK6bEiv",
