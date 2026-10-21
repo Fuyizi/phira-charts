@@ -1472,13 +1472,16 @@ async function waitParsed(d, want) {
     if (link) link.dispatchEvent(new w.MouseEvent("click", { bubbles: true, cancelable: true }));
     const modal = d.getElementById("leave-ask");
     ok(!!modal, "点站内链接时弹出了确认框");
-    ok(!!modal && /还有内容没有保存，确定要退出吗/.test(modal.textContent),
-      "确认框文案正确", modal ? modal.textContent.slice(0, 40) : "");
+    ok(!!modal && /保存|上传/.test(modal.textContent) && modal.textContent.indexOf("还有内容没有保存，确定要退出吗") === -1,
+      "确认框文案已换成随机催稿版", modal ? modal.textContent.slice(0, 40) : "");
     ok(!!modal && !!modal.querySelector('[data-leave="stay"]') &&
-      !!modal.querySelector('[data-leave="go"]'), "确认框有「继续编辑 / 确认离开」两个按钮");
+      !!modal.querySelector('[data-leave="go"]'), "确认框有「离开 / 取消」两个按钮");
+    ok(!!modal && /^取消$/.test(modal.querySelector('[data-leave="stay"]').textContent.trim()) &&
+      /^离开$/.test(modal.querySelector('[data-leave="go"]').textContent.trim()),
+      "按钮文案是「离开 / 取消」");
     ok(!!d.querySelector("#edit-mount .sc-form"), "弹窗期间没有跳走（页面还在）");
     if (modal) modal.querySelector('[data-leave="stay"]').click();
-    ok(!d.getElementById("leave-ask"), "点「继续编辑」后弹窗关掉");
+    ok(!d.getElementById("leave-ask"), "点「取消」后弹窗关掉");
 
     /* 上传页也用同一套「未保存就离开」保护 */
     const upSrc = fs.readFileSync(
@@ -1487,7 +1490,10 @@ async function waitParsed(d, want) {
     ok(/WB\.leaveGuard\.mark\(false\)/.test(upSrc), "上传成功后清掉标记");
     const comSrc = fs.readFileSync(
       path.join(__dirname, "..", "assets", "js", "common.js"), "utf8");
-    ok(comSrc.indexOf("还有内容没有保存，确定要退出吗") > -1, "离开确认的文案在 common.js 里");
+    ok(/var TIPS = \[/.test(comSrc) && /Math\.floor\(Math\.random\(\) \* TIPS\.length\)/.test(comSrc),
+      "离开确认的文案是多条随机挑（common.js 的 TIPS）");
+    ok(comSrc.indexOf("不能就这么走开哇") > -1 && comSrc.indexOf("谱师大大") > -1 &&
+      comSrc.indexOf("渺小而可爱的人类") > -1, "三条随机文案都在");
     ok(/beforeunload/.test(comSrc), "关标签 / 刷新时也会拦（beforeunload）");
 
     ok(realErrors(errs).length === 0, "创作中心无脚本运行时错误", realErrors(errs).join(" | "));

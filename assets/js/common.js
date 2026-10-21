@@ -1039,8 +1039,8 @@
   /* ------------------------------------------- 离开页面的二次确认 --------
      表单里有没保存的东西，用户想走（点站内链接 / 关标签 / 刷新）时先问一句。
      两个入口，能力不一样，都是浏览器规定的：
-       · 站内链接点击 —— 可以弹**自己的**弹窗，文案就是我们要的
-         「还有内容没有保存，确定要退出吗？」
+       · 站内链接点击 —— 可以弹**自己的**弹窗，文案从 TIPS 里**随机**挑一条
+         （每次进来都不一样，图个乐；按钮固定「离开 / 取消」）
        · beforeunload（关标签 / 刷新 / 关浏览器）—— 浏览器**只允许**它弹
          自己那套通用文案（"系统可能不会保存您所做的更改"），我们写的字多半不显示。
          这是安全限制，改不了，但至少能拦住误操作。
@@ -1053,7 +1053,16 @@
        WB.leaveGuard.onLeave = fn   可选：真的离开之前做点事 */
   WB.leaveGuard = (function () {
     var dirty = false;
-    var TIP = "还有内容没有保存，确定要退出吗？";
+    /* 提示语随机挑一条，别每次都一样 */
+    var TIPS = [
+      "喂喂，人类——你还没保存或者上传呢，不能就这么走开哇！！",
+      "谱师大大！！（超大声）你…你怎么就想走哇，你还没有保存呐！！",
+      "渺小而可爱的人类，我该如何提醒你，你离开前还没有保存或上传呢？"
+    ];
+    function pickTip() {
+      return TIPS[Math.floor(Math.random() * TIPS.length)];
+    }
+    var TIP = TIPS[0];              /* 兼容旧调用；beforeunload 只用它 */
     var api = { onLeave: null };
 
     function close(wrap) {
@@ -1071,11 +1080,11 @@
       wrap.className = "leave-mask";
       wrap.innerHTML =
         '<div class="leave-box" role="dialog" aria-modal="true" aria-labelledby="leave-tip">' +
-          '<p class="leave-tip" id="leave-tip">' + WB.esc(tipOverride || TIP) + "</p>" +
+          '<p class="leave-tip" id="leave-tip">' + WB.esc(tipOverride || pickTip()) + "</p>" +
           '<p class="leave-sub">离开后这一页填的东西会丢掉。</p>' +
           '<div class="leave-actions">' +
-            '<button type="button" class="btn primary" data-leave="stay">继续编辑</button>' +
-            '<button type="button" class="btn ghost" data-leave="go">确认离开</button>' +
+            '<button type="button" class="btn ghost" data-leave="go">离开</button>' +
+            '<button type="button" class="btn primary" data-leave="stay">取消</button>' +
           "</div>" +
         "</div>";
       document.body.appendChild(wrap);
