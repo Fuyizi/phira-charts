@@ -1053,11 +1053,13 @@
        WB.leaveGuard.onLeave = fn   可选：真的离开之前做点事 */
   WB.leaveGuard = (function () {
     var dirty = false;
-    /* 提示语随机挑一条，别每次都一样 */
+    /* 提示语随机挑一条，别每次都一样。
+       ⚠️ 每句里的 \n 就是主人原文的换行位置，渲染时会变成 <br> ——
+       别再自作主张把它们合成一行（2026-10-22 被说过一次）。 */
     var TIPS = [
-      "喂喂，人类——你还没保存或者上传呢，不能就这么走开哇！！",
-      "谱师大大！！（超大声）你…你怎么就想走哇，你还没有保存呐！！",
-      "渺小而可爱的人类，我该如何提醒你，你离开前还没有保存或上传呢？"
+      "喂喂，人类——你还没保存或者上传呢，\n不能就这么走开哇！！",
+      "谱师大大！！（超大声）\n你…你怎么就想走哇，你还没有保存呐！！",
+      "渺小而可爱的人类，我该如何提醒你，\n你离开前还没有保存或上传呢？"
     ];
     function pickTip() {
       return TIPS[Math.floor(Math.random() * TIPS.length)];
@@ -1078,9 +1080,13 @@
       var wrap = document.createElement("div");
       wrap.id = "leave-ask";
       wrap.className = "leave-mask";
+      var tip = tipOverride || pickTip();
       wrap.innerHTML =
         '<div class="leave-box" role="dialog" aria-modal="true" aria-labelledby="leave-tip">' +
-          '<p class="leave-tip" id="leave-tip">' + WB.esc(tipOverride || pickTip()) + "</p>" +
+          /* 先整体转义，再把换行变成 <br>（顺序不能反） */
+          '<p class="leave-tip" id="leave-tip">' +
+            WB.esc(tip).replace(/\n/g, "<br>") +
+          "</p>" +
           '<p class="leave-sub">离开后这一页填的东西会丢掉。</p>' +
           '<div class="leave-actions">' +
             '<button type="button" class="btn ghost" data-leave="go">离开</button>' +

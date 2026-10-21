@@ -1721,6 +1721,7 @@ pre.code .copy-btn {
   padding: 20px;
   background: rgba(0, 0, 0, .42);
   backdrop-filter: blur(2px);
+  animation: leave-fade var(--motion-fast) linear both;
 }
 .leave-box {
   width: min(420px, 100%);
@@ -1729,16 +1730,29 @@ pre.code .copy-btn {
   border: 1px solid var(--border);
   border-radius: 10px;
   box-shadow: 0 18px 48px -12px rgba(0, 0, 0, .45);
+  animation: leave-pop var(--motion-medium) var(--motion-ease) both;
 }
 .leave-tip {
   margin: 0 0 6px;
   font-size: 15px;
   font-weight: 600;
-  line-height: 1.55;
+  line-height: 1.62;
 }
 .leave-sub { margin: 0 0 16px; font-size: 12.5px; color: var(--text-mute); }
-.leave-actions { display: flex; justify-content: flex-end; gap: 8px; }
+/* 按钮居中（主人 2026-10-22 指定），别再改回靠右 */
+.leave-actions { display: flex; justify-content: center; gap: 8px; }
 .leave-actions .btn { min-width: 92px; }
+
+/* 弹窗入场：遮罩淡入、面板微微上浮放大。故意只写 from 到 to 的
+   一次性动画，不挂 infinite；减少动态效果时由下面那条媒体查询关掉。 */
+@keyframes leave-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes leave-pop {
+  from { opacity: 0; transform: translate3d(0, 12px, 0) scale(.96); }
+  to   { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
 @media (max-width: 860px) {
   #list-mount table.wikitable { font-size: 12.5px; }
   #list-mount table.wikitable td.actions { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -1879,6 +1893,7 @@ pre.code .copy-btn {
   .motion-ready .sidebar { animation: none; }
   .thumb-grid.wb-fresh .vcard { animation: none; }
   .motion-ready .thumb-grid .vcard { transition: none; }
+  .leave-mask, .leave-box { animation: none; }
 }
 /* 详细列表用**同一套**入场动效（从下浮起 + 淡入）。
    注意挂在 .table-wrap 上而不是 <tr> 上 —— tr 能不能吃 transform 各家浏览器

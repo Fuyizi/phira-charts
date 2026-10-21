@@ -1479,6 +1479,8 @@ async function waitParsed(d, want) {
     ok(!!modal && /^取消$/.test(modal.querySelector('[data-leave="stay"]').textContent.trim()) &&
       /^离开$/.test(modal.querySelector('[data-leave="go"]').textContent.trim()),
       "按钮文案是「离开 / 取消」");
+    ok(!!modal && /<br>/i.test(modal.querySelector("#leave-tip").innerHTML),
+      "提示语按原文换行（TIPS 里的 \\n 渲染成 <br>）");
     ok(!!d.querySelector("#edit-mount .sc-form"), "弹窗期间没有跳走（页面还在）");
     if (modal) modal.querySelector('[data-leave="stay"]').click();
     ok(!d.getElementById("leave-ask"), "点「取消」后弹窗关掉");
